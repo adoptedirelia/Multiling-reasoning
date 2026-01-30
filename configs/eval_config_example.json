@@ -1,0 +1,29 @@
+{
+  "mt1_config": {
+    "model_type": "qwen3",
+    "model_name": "Qwen/Qwen2.5-7B",
+    "device_map": "auto",
+    "torch_dtype": "auto",
+    "attn_implementation": "flash_attention_2",
+    "max_new_tokens": 4096,
+    "temperature": 0.7,
+    "top_p": 0.9
+  },
+  "mt2_config": {
+    "model_type": "qwen3",
+    "model_name": "Qwen/Qwen2.5-7B",
+    "device_map": "auto",
+    "torch_dtype": "auto",
+    "attn_implementation": "flash_attention_2",
+    "max_new_tokens": 4096,
+    "temperature": 0.7,
+    "top_p": 0.9
+  },
+  "dataset_path": "dataset/test.json",
+  "dataset_type": "json",
+  "output_dir": "./results",
+  "output_file": "eval_results.json",
+  "batch_size": 2,
+  "num_samples": null,
+  "save_intermediate": true
+}
