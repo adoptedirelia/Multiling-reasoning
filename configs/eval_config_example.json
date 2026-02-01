@@ -1,7 +1,7 @@
 {
   "mt1_config": {
     "model_type": "qwen3",
-    "model_name": "Qwen/Qwen2.5-7B",
+    "model_name": "meta-llama/Llama-3.1-8B-Instruct",
     "device_map": "auto",
     "torch_dtype": "auto",
     "attn_implementation": "flash_attention_2",
@@ -11,7 +11,7 @@
   },
   "mt2_config": {
     "model_type": "qwen3",
-    "model_name": "Qwen/Qwen2.5-7B",
+    "model_name": "meta-llama/Llama-3.1-8B-Instruct",
     "device_map": "auto",
     "torch_dtype": "auto",
     "attn_implementation": "flash_attention_2",
