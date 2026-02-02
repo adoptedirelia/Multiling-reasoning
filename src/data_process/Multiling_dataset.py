@@ -1,17 +1,58 @@
 import json
+import os
+import pandas as pd
+
+class PIQA_Dataset:
+    def __init__(self, dataset_path, save_path):
+        self.language_map = {
+            "Chinese": "cmn_hans.tsv",
+            "Arabic": "arb_arab.tsv",
+            "Japanese": "jpn_jpan.tsv",
+            "Vietnamese": "vie_latn.tsv",
+            "Marathi": "mar_deva.tsv",
+            "Armenian": "hye_armn.tsv",
+            "Telugu": "tel_telu.tsv",
+        }
+        self.dataset_path = dataset_path
 
 
-class Global_PIQA:
-    def __init__(self, data_path: str):
-        self.data = self.load_data(data_path)
 
-    def load_data(self, data_path: str):
-        with open(data_path, 'r') as f:
-            data = json.load(f)
-        return data
+        self.dataset = self.load_dataset()
 
-    def __len__(self):
-        return len(self.data)
+        with open(os.path.join(save_path, "PIQA.json"), "w") as f:
+            json.dump(self.dataset, f, indent=4)
 
-    def __getitem__(self, idx):
-        return self.data[idx]
+
+    def load_dataset(self):
+        result = {}
+        for language,file_name in self.language_map.items():
+            result[language] = []
+            data_path = os.path.join(self.dataset_path,file_name)
+            df = pd.read_csv(data_path,sep="\t")
+
+            for row in df.itertuples(index=True):
+                # question = f"{row.prompt} \n A. {row.solution0} \n B. {row.solution1}"
+                question = f"{row.prompt}"
+
+                # result.append({
+                #     "question": question,
+                #     "opention_0": row.solution0,
+                #     "opention_1": row.solution1,
+                #     "answer": row.label,
+                #     "language": language,
+                # })
+                option_0 = row.solution0
+                option_1 = row.solution1
+                answer = row.label
+
+                result[language].append({
+                    "question": question,
+                    "answer": option_0 if answer == 0 else option_1,
+
+                })
+        return result
+
+
+
+if __name__ == "__main__":
+    dataset = PIQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/piqa/data", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")

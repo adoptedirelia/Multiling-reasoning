@@ -19,11 +19,11 @@
     "temperature": 0.7,
     "top_p": 0.9
   },
-  "dataset_path": "dataset/test.json",
+  "dataset_path": "dataset/PIQA.json",
   "dataset_type": "json",
   "output_dir": "./results",
   "output_file": "eval_results.json",
-  "batch_size": 2,
+  "batch_size": 8,
   "num_samples": null,
   "save_intermediate": true
 }
