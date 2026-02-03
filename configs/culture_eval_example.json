@@ -1,0 +1,15 @@
+{
+  "input_path": "data_transfer/eval_results.json",
+  "output_path": "data_transfer/culture_scores_mt.json",
+  "providers": [
+    {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "api_key_env": "OPENAI_API_KEY",
+      "temperature": 0.0,
+      "max_output_tokens": 32
+    }
+  ],
+  "request_timeout_s": 60,
+  "max_samples": null
+}

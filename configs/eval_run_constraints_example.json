@@ -1,0 +1,49 @@
+{
+  "run_name": "mkqa_constraints_llm_only",
+  "dataset": {
+    "name": "mkqa",
+    "split": "train",
+    "langs": ["zh_cn", "ar", "ja", "vi", "mr", "am", "te"],
+    "max_examples": 1000,
+    "seed": 42
+  },
+  "models": {
+    "MT1": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "max_new_tokens": 128,
+      "temperature": 0.0,
+      "top_p": 1.0
+    },
+    "reasoner_en": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "max_new_tokens": 256,
+      "temperature": 0.0,
+      "top_p": 1.0
+    },
+    "MT2": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "max_new_tokens": 128,
+      "temperature": 0.0,
+      "top_p": 1.0
+    }
+  },
+  "constraints_file": "configs/eval_constraints_example.json",
+  "generation": {
+    "translation_batch_size": 16,
+    "translation_max_new_tokens": 128,
+    "reasoning_batch_size": 8,
+    "reasoning_max_new_tokens": 256,
+    "reasoning_temperature": 0.0,
+    "reasoning_top_p": 1.0,
+    "mt2_mode": "translator",
+    "mt2_batch_size": 8,
+    "mt2_max_new_tokens": 256
+  },
+  "outputs": {
+    "results_csv": "results/mkqa_constraints_llm_only.csv",
+    "logs_dir": "logs"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "constraints": [
+    {
+      "id": "min_chars_50",
+      "text": "Answer with at least a 50 characters."
+    },
+    {
+      "id": "brief_then_three_reasons",
+      "text": "Briefly state your answer, then, after a blank line, give three reasons for why it is correct, each separated by a blank line."
+    },
+    {
+      "id": "exactly_two_paragraphs",
+      "text": "Answer with exactly two paragraphs, separated by a blank line."
+    }
+  ]
+}
