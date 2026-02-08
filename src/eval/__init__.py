@@ -1,6 +1,6 @@
 from .config import EvalConfig, ModelConfig
-from .main import evaluate_pipeline, run_mt1, run_mt2
 from .engine import BaseEngine, Qwen3Engine
+from .main import translate_questions, evaluate_pipeline
 
-__all__ = ['EvalConfig', 'ModelConfig', 'evaluate_pipeline', 'run_mt1', 'run_mt2', 
+__all__ = ['EvalConfig', 'ModelConfig', 'translate_questions', 'evaluate_pipeline', 
            'BaseEngine', 'Qwen3Engine']

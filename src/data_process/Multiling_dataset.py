@@ -10,7 +10,7 @@ class PIQA_Dataset:
             "Japanese": "jpn_jpan.tsv",
             "Vietnamese": "vie_latn.tsv",
             "Marathi": "mar_deva.tsv",
-            "Armenian": "hye_armn.tsv",
+            "Amharic": "amh_ethi.tsv",
             "Telugu": "tel_telu.tsv",
         }
         self.dataset_path = dataset_path
@@ -51,8 +51,44 @@ class PIQA_Dataset:
 
                 })
         return result
+class MKQA_Dataset:
+    def __init__(self, dataset_path, save_path):
+        self.dataset_path = dataset_path
+        self.save_path = save_path
+        self.language_map = {
+            "zh_cn": "Chinese",
+            "ar": "Arabic",
+            "ja": "Japanese",
+            "vi": "Vietnamese",
+        }
+        self.dataset = self.load_dataset()
+        with open(os.path.join(save_path, "MKQA.json"), "w") as f:
+            json.dump(self.dataset, f, indent=4)
 
+
+    def load_dataset(self):
+        res = {}
+        with open(self.dataset_path, 'r') as f:
+            for line in f:
+                data = json.loads(line)
+                english_question = data['query']
+                for language,answer in data['answers'].items():
+                    if language not in self.language_map.keys():
+                        continue
+                    language_name = self.language_map[language]
+                    if language_name not in res:
+                        res[language_name] = []
+                    query = data['queries'][language]
+
+                    res[language_name].append({
+                        'english_question': english_question,
+                        'question': query,
+                        'answer': [ans['text'] for ans in answer]
+                    })
+
+        return res
 
 
 if __name__ == "__main__":
     dataset = PIQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/piqa/data", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
+    dataset = MKQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/mkqa.jsonl", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")

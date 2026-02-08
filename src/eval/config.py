@@ -24,6 +24,9 @@ class EvalConfig:
     # MT2 model configuration (if different from MT1)
     mt2_config: Optional[ModelConfig] = None
     
+    # LLM model configuration (for reasoning, used in cascade and prompting baselines)
+    llm_config: Optional[ModelConfig] = None
+    
     # Dataset configuration
     dataset_path: str = ""
     dataset_type: str = "json"  # "json" or other types
@@ -31,6 +34,10 @@ class EvalConfig:
     # Output configuration
     output_dir: str = "./results"
     output_file: str = "eval_results.json"
+    translation_file: str = "mt1_translations.json"
+    
+    # Baseline type: "end_to_end", "cascade", "prompting", or "mt1_mt2" (default pipeline)
+    baseline_type: str = "mt1_mt2"
     
     # Other configuration
     batch_size: int = 1
@@ -46,5 +53,8 @@ def load_config_from_dict(config_dict: Dict[str, Any]) -> EvalConfig:
     mt2_dict = config_dict.get("mt2_config")
     mt2_config = ModelConfig(**mt2_dict) if mt2_dict else None
     
-    eval_dict = {k: v for k, v in config_dict.items() if k not in ["mt1_config", "mt2_config"]}
-    return EvalConfig(mt1_config=mt1_config, mt2_config=mt2_config, **eval_dict)
+    llm_dict = config_dict.get("llm_config")
+    llm_config = ModelConfig(**llm_dict) if llm_dict else None
+    
+    eval_dict = {k: v for k, v in config_dict.items() if k not in ["mt1_config", "mt2_config", "llm_config"]}
+    return EvalConfig(mt1_config=mt1_config, mt2_config=mt2_config, llm_config=llm_config, **eval_dict)
