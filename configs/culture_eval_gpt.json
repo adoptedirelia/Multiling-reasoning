@@ -1,6 +1,6 @@
 {
   "input_path": "data_transfer/eval_results_GPT.json",
-  "output_path": "data_transfer/culture_scores_both_gpt.json",
+  "output_path": "data_transfer/culture_scores_gt_gpt.json",
   "providers": [
     {
       "provider": "openai",

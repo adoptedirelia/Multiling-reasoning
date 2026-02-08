@@ -77,6 +77,19 @@ def _exactly_two_paragraphs(text: str) -> bool:
     return len(paragraphs) == 2
 
 
+def _answer_then_brief_justification(text: str) -> bool:
+    t = _strip_ws(text)
+    if not t:
+        return False
+    lines = [ln.strip() for ln in t.splitlines()]
+    if len(lines) != 2:
+        return False
+    if not lines[0] or not lines[1]:
+        return False
+    # brief justification: keep it short
+    return True
+
+
 CONSTRAINT_REGISTRY: Dict[str, Callable[[str], bool]] = {
     "numeric_only": _has_only_numeric,
     "single_line": _single_line,
@@ -87,6 +100,7 @@ CONSTRAINT_REGISTRY: Dict[str, Callable[[str], bool]] = {
     "min_chars_50": _at_least_fifty_chars,
     "brief_then_three_reasons": _brief_then_three_reasons,
     "exactly_two_paragraphs": _exactly_two_paragraphs,
+    "answer_then_brief_justification": _answer_then_brief_justification,
 }
 
 

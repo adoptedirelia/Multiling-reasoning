@@ -1,5 +1,5 @@
 {
-  "run_name": "mkqa_constraints_llm_only",
+  "run_name": "mkqa_constraints_2_lines",
   "dataset": {
     "name": "mkqa",
     "split": "train",
@@ -30,7 +30,7 @@
       "top_p": 1.0
     }
   },
-  "constraints_file": "configs/eval_constraints_example.json",
+  "constraints_file": "configs/eval_constraints_two_line.json",
   "generation": {
     "translation_batch_size": 16,
     "translation_max_new_tokens": 128,
@@ -43,7 +43,7 @@
     "mt2_max_new_tokens": 256
   },
   "outputs": {
-    "results_csv": "results/mkqa_constraints_llm_only.csv",
+    "results_json": "results/mkqa_constraints_two_lines.json",
     "logs_dir": "logs"
   }
 }

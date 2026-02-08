@@ -1,4 +1,3 @@
-import csv
 import json
 import os
 from datetime import datetime
@@ -12,14 +11,10 @@ def setup_logging(logs_dir: str, run_name: str) -> str:
     return log_path
 
 
-def append_row_csv(path: str, fieldnames: List[str], row: Dict):
+def save_results_json(path: str, rows: List[Dict]):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    exists = os.path.exists(path)
-    with open(path, "a", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        if not exists:
-            writer.writeheader()
-        writer.writerow(row)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rows, f, ensure_ascii=False, indent=2)
 
 
 def load_constraints(path: str) -> List[Dict]:

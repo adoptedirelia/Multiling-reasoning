@@ -1,9 +1,7 @@
-from .config import EvaluationConfig, ModelEngineConfig, load_config
-from .main import run
+from .config import ErrorSimConfig, ModelEngineConfig, load_config
 
 __all__ = [
-    "EvaluationConfig",
+    "ErrorSimConfig",
     "ModelEngineConfig",
     "load_config",
-    "run",
 ]

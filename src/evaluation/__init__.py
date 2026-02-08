@@ -1,7 +1,7 @@
-from .error_prop.config import EvaluationConfig, ModelEngineConfig, load_config
+from .error_prop.config import ErrorSimConfig, ModelEngineConfig, load_config
 
 __all__ = [
-    "EvaluationConfig",
+    "ErrorSimConfig",
     "ModelEngineConfig",
     "load_config",
 ]

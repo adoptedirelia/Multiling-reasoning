@@ -24,6 +24,26 @@ class LlamaEngine(BaseEngine):
         self.llm_kwargs = kwargs
 
     def load_model(self):
+        if "dtype" not in self.llm_kwargs:
+            dtype = None
+            if self.torch_dtype and self.torch_dtype != "auto":
+                if self.torch_dtype in ("float16", "half"):
+                    dtype = "half"
+                else:
+                    dtype = self.torch_dtype
+            else:
+                try:
+                    import torch
+
+                    if torch.cuda.is_available():
+                        major, _minor = torch.cuda.get_device_capability(0)
+                        if major < 8:
+                            dtype = "half"
+                except Exception:
+                    dtype = None
+            if dtype is not None:
+                self.llm_kwargs["dtype"] = dtype
+
         self.model = LLM(
             model=self.model_name,
             tensor_parallel_size=self.tensor_parallel_size,

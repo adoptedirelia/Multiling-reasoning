@@ -6,3 +6,4 @@ wandb/
 outputs/
 src/evaluation/scripts/
 logs/
+ml-mkqa/

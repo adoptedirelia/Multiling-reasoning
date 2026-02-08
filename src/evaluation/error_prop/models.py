@@ -1,165 +1,228 @@
-import re
-from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 from src.eval.engine import BaseEngine
 
-from .prompts import build_mt2_corrector_prompt, build_reasoning_prompt, build_translate_prompt
+from .prompts import (
+    reasoner_prompt,
+    mt2_context_prompt,
+    mt2_standard_prompt,
+    input_corruption_prompt,
+    output_corruption_prompt,
+)
+from .text_utils import extract_answer, extract_reasoning, extract_tag
 
 
-def _extract_answer(text: str) -> str:
-    t = text.strip()
-
-    answer_match = re.search(r"<answer>(.*?)</answer>", t, re.DOTALL | re.IGNORECASE)
-    if answer_match:
-        return answer_match.group(1).strip()
-
-    if "Response:" in t:
-        return t.split("Response:")[-1].strip()
-    return t
-
-
-def _extract_reasoning(text: str) -> str:
-    t = text.strip()
-    reasoning_match = re.search(r"<think>(.*?)</think>", t, re.DOTALL | re.IGNORECASE)
-    if reasoning_match:
-        return reasoning_match.group(1).strip()
-    return ""
-
-
-
-
-@dataclass
-class ReasonerOutput:
-    answer: str
-    reasoning: str
-    raw_output: str
-
-
-class LLMTranslator:
-    def __init__(self, engine: BaseEngine, src_lang: str, tgt_lang: str, default_max_new_tokens: int = 128):
+class ENReasoner:
+    def __init__(self, engine: BaseEngine):
         self.engine = engine
-        self.src_lang = src_lang
-        self.tgt_lang = tgt_lang
-        self.default_max_new_tokens = default_max_new_tokens
 
-    def batched_translate(self, texts: List[str], batch_size: int = 8, max_new_tokens: int = None) -> List[str]:
-        outputs: List[str] = []
-        use_max_new_tokens = max_new_tokens or self.default_max_new_tokens
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i : i + batch_size]
-            prompts = [build_translate_prompt(t, self.src_lang, self.tgt_lang) for t in batch]
-            chunk = self.engine.generate_batch(
-                prompts,
-                max_new_tokens=use_max_new_tokens,
-                temperature=0.0,
-                top_p=1.0,
-            )
-            outputs.extend([_extract_answer(c) for c in chunk])
-        return outputs
-
-
-class LLMReasoner:
-    def __init__(
-        self,
-        engine: BaseEngine,
-        default_max_new_tokens: int = 256,
-        default_temperature: float = 0.0,
-        default_top_p: float = 1.0,
-    ):
-        self.engine = engine
-        self.default_max_new_tokens = default_max_new_tokens
-        self.default_temperature = default_temperature
-        self.default_top_p = default_top_p
-
-    def answer_batch(
-        self,
-        questions: List[str],
-        batch_size: int = 8,
-        max_new_tokens: int = None,
-        temperature: float = None,
-        top_p: float = None,
-    ) -> List[str]:
-        rich = self.reason_answer_batch(
-            questions=questions,
-            batch_size=batch_size,
+    def run_batch(self, questions_en: List[str], max_new_tokens: int, temperature: float, top_p: float):
+        prompts = [reasoner_prompt(q) for q in questions_en]
+        outputs = self.engine.generate_batch(
+            prompts,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
             top_p=top_p,
         )
-        return [x.answer for x in rich]
-
-    def reason_answer_batch(
-        self,
-        questions: List[str],
-        batch_size: int = 8,
-        max_new_tokens: int = None,
-        temperature: float = None,
-        top_p: float = None,
-    ) -> List[ReasonerOutput]:
-        outputs: List[str] = []
-        use_max_new_tokens = max_new_tokens or self.default_max_new_tokens
-        use_temperature = self.default_temperature if temperature is None else temperature
-        use_top_p = self.default_top_p if top_p is None else top_p
-
-        for i in range(0, len(questions), batch_size):
-            batch = questions[i : i + batch_size]
-            prompts = [build_reasoning_prompt(q) for q in batch]
-            chunk = self.engine.generate_batch(
-                prompts,
-                max_new_tokens=use_max_new_tokens,
-                temperature=use_temperature,
-                top_p=use_top_p,
+        out = []
+        for raw in outputs:
+            out.append(
+                {
+                    "raw": raw,
+                    "reasoning": extract_reasoning(raw),
+                    "answer": extract_answer(raw),
+                }
             )
-            outputs.extend(chunk)
-        return [
-            ReasonerOutput(
-                answer=_extract_answer(c),
-                reasoning=_extract_reasoning(c),
-                raw_output=c.strip(),
-            )
-            for c in outputs
-        ]
+        return out
 
 
-class Corrector:
-    def __init__(self, engine: BaseEngine, target_lang: str, default_max_new_tokens: int = 256):
+class MT2Standard:
+    def __init__(self, engine: BaseEngine, target_lang: str):
         self.engine = engine
         self.target_lang = target_lang
-        self.default_max_new_tokens = default_max_new_tokens
 
-    def produce_batch(
+    def run_batch(self, answers_en: List[str], max_new_tokens: int, temperature: float, top_p: float):
+        prompts = [mt2_standard_prompt(a, self.target_lang) for a in answers_en]
+        outputs = self.engine.generate_batch(
+            prompts,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        return [extract_answer(o) for o in outputs]
+
+
+class MT2Context:
+    def __init__(self, engine: BaseEngine, target_lang: str):
+        self.engine = engine
+        self.target_lang = target_lang
+
+    def run_batch(
         self,
-        *,
-        q_l: List[str],
-        q_en: List[str],
-        y_en: List[str],
-        reason_en: List[str],
-        batch_size: int = 8,
-        max_new_tokens: int = None,
+        x_l: List[str],
+        x_en_hat: List[str],
+        r_en_hat: List[str],
+        y_en_hat: List[str],
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
+    ):
+        prompts = [
+            mt2_context_prompt(xl, xe, r, y, self.target_lang)
+            for xl, xe, r, y in zip(x_l, x_en_hat, r_en_hat, y_en_hat)
+        ]
+        outputs = self.engine.generate_batch(
+            prompts,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        return [extract_answer(o) for o in outputs]
+
+
+def _invalid_llm_text(text: str) -> bool:
+    if not text:
+        return True
+    lowered = text.lower()
+    if "```" in text:
+        return True
+    if "<question>" in lowered or "<think>" in lowered or "<answer>" in lowered:
+        return True
+    if "explanation:" in lowered or "note:" in lowered:
+        return True
+    return False
+
+
+def _fallback_shift_intent(x_en: str) -> str:
+    return f"Explain {x_en}"
+
+
+def _fallback_drop_constraints(x_en: str) -> str:
+    return f"Provide a detailed response: {x_en}"
+
+
+def _fallback_output_corruption(x_en: str, r_en: str, y_en: str, corruption_type: str) -> Dict[str, str]:
+    if corruption_type == "assumption":
+        r_err = f"{r_en} Assuming an unstated condition, the outcome changes."
+        y_err = f"{y_en} (under that assumption)"
+        return {"r_en_err": r_err, "y_en_err": y_err}
+    if corruption_type == "inconsistency":
+        r_err = f"{r_en} Therefore, the answer is 12."
+        y_err = "15"
+        return {"r_en_err": r_err, "y_en_err": y_err}
+    if corruption_type == "drift":
+        r_err = f"{r_en} This provides background context rather than a direct answer."
+        y_err = "This topic has important historical significance."
+        return {"r_en_err": r_err, "y_en_err": y_err}
+    return {"r_en_err": r_en, "y_en_err": y_en}
+
+
+class LLMInputCorruptor:
+    def __init__(self, engine: BaseEngine):
+        self.engine = engine
+
+    def corrupt_batch(
+        self,
+        questions_en: List[str],
+        corruption_type: str,
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
     ) -> List[str]:
-        outputs: List[str] = []
-        use_max_new_tokens = max_new_tokens or self.default_max_new_tokens
-        for i in range(0, len(q_l), batch_size):
-            q_l_b = q_l[i : i + batch_size]
-            q_en_b = q_en[i : i + batch_size]
-            y_en_b = y_en[i : i + batch_size]
-            reason_b = reason_en[i : i + batch_size]
-            prompts = [
-                build_mt2_corrector_prompt(
-                    q_l=q_l_i,
-                    q_en=q_en_i,
-                    y_en=y_en_i,
-                    reasoning_en=reason_i,
-                    target_lang=self.target_lang,
-                )
-                for q_l_i, q_en_i, y_en_i, reason_i in zip(q_l_b, q_en_b, y_en_b, reason_b)
+        base_prompts = [input_corruption_prompt(q, corruption_type) for q in questions_en]
+        outputs = self.engine.generate_batch(
+            base_prompts,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        out = []
+        retry_idxs = []
+        for i, raw in enumerate(outputs):
+            err = extract_tag(raw, "x_en_err")
+            if not err or _invalid_llm_text(err):
+                retry_idxs.append(i)
+                out.append("")
+            else:
+                out.append(err)
+
+        if retry_idxs:
+            strict_prompts = [
+                base_prompts[i] + "\nSTRICT: Output only <x_en_err> tags with one line."
+                for i in retry_idxs
             ]
-            chunk = self.engine.generate_batch(
-                prompts,
-                max_new_tokens=use_max_new_tokens,
-                temperature=0.0,
-                top_p=1.0,
+            retry_outs = self.engine.generate_batch(
+                strict_prompts,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
             )
-            outputs.extend([_extract_answer(c) for c in chunk])
-        return outputs
+            for idx, raw in zip(retry_idxs, retry_outs):
+                err = extract_tag(raw, "x_en_err")
+                if not err or _invalid_llm_text(err):
+                    if corruption_type == "shift_intent":
+                        out[idx] = _fallback_shift_intent(questions_en[idx])
+                    else:
+                        out[idx] = _fallback_drop_constraints(questions_en[idx])
+                else:
+                    out[idx] = err
+        return out
+
+
+class LLMOutputCorruptor:
+    def __init__(self, engine: BaseEngine):
+        self.engine = engine
+
+    def corrupt_batch(
+        self,
+        questions_en: List[str],
+        reasonings_en: List[str],
+        answers_en: List[str],
+        corruption_type: str,
+        max_new_tokens: int,
+        temperature: float,
+        top_p: float,
+    ) -> List[Dict[str, str]]:
+        base_prompts = [
+            output_corruption_prompt(q, r, a, corruption_type)
+            for q, r, a in zip(questions_en, reasonings_en, answers_en)
+        ]
+        outputs = self.engine.generate_batch(
+            base_prompts,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+        )
+        out = []
+        retry_idxs = []
+        for i, raw in enumerate(outputs):
+            r_err = extract_tag(raw, "r_en")
+            y_err = extract_tag(raw, "y_en")
+            if _invalid_llm_text(r_err) or _invalid_llm_text(y_err):
+                retry_idxs.append(i)
+                out.append({"r_en_err": "", "y_en_err": ""})
+            else:
+                out.append({"r_en_err": r_err, "y_en_err": y_err})
+
+        if retry_idxs:
+            strict_prompts = [
+                base_prompts[i]
+                + "\nSTRICT: Output only <r_en> and <y_en> tags, 1-2 sentences each."
+                for i in retry_idxs
+            ]
+            retry_outs = self.engine.generate_batch(
+                strict_prompts,
+                max_new_tokens=max_new_tokens,
+                temperature=temperature,
+                top_p=top_p,
+            )
+            for idx, raw in zip(retry_idxs, retry_outs):
+                r_err = extract_tag(raw, "r_en")
+                y_err = extract_tag(raw, "y_en")
+                if _invalid_llm_text(r_err) or _invalid_llm_text(y_err):
+                    out[idx] = _fallback_output_corruption(
+                        questions_en[idx], reasonings_en[idx], answers_en[idx], corruption_type
+                    )
+                else:
+                    out[idx] = {"r_en_err": r_err, "y_en_err": y_err}
+        return out

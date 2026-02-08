@@ -1,4 +1,4 @@
-from src.eval.engine import BaseEngine, LlamaEngine, OpenAIEngine, Qwen3Engine
+from src.eval.engine import BaseEngine, LlamaEngine, Qwen3Engine
 
 from .config import ModelEngineConfig
 
@@ -21,9 +21,5 @@ def create_engine(model_cfg: ModelEngineConfig) -> BaseEngine:
             attn_implementation=model_cfg.attn_implementation,
             **model_cfg.engine_kwargs,
         )
-    if model_type == "openai":
-        return OpenAIEngine(
-            model_name=model_cfg.model_name,
-            **model_cfg.engine_kwargs,
-        )
-    raise ValueError(f"Unsupported model_type={model_cfg.model_type}")
+
+    raise ValueError(f"Unsupported model_type={model_cfg.model_type}. Supported: qwen3, llama.")

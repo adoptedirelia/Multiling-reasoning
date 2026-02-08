@@ -6,9 +6,9 @@ from typing import Dict, List, Tuple
 
 BASE = pathlib.Path("/gscratch/ark/arnav/mt-llm-mt/Multiling-reasoning/data_transfer")
 FILES = {
-    "answer": BASE / "culture_scores.json",
+    "answer": BASE / "culture_scores_mt.json",
     "ground_truth": BASE / "culture_scores_gt.json",
-    "answer_with_gt": BASE / "culture_scores_mt.json",
+    "answer_with_gt": BASE / "culture_scores_both.json",
 }
 
 
