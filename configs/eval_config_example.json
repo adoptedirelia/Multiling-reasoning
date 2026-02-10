@@ -34,7 +34,7 @@
   "output_dir": "./results",
   "output_file": "eval_results.json",
   "translation_file": "mt1_translations.json",
-  "batch_size": 8,
+  "batch_size": 16,
   "num_samples": null,
   "save_intermediate": true
 }

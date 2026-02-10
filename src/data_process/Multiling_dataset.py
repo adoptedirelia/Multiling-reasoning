@@ -72,6 +72,7 @@ class MKQA_Dataset:
             for line in f:
                 data = json.loads(line)
                 english_question = data['query']
+                example_id = data['example_id']
                 for language,answer in data['answers'].items():
                     if language not in self.language_map.keys():
                         continue
@@ -83,6 +84,7 @@ class MKQA_Dataset:
                     res[language_name].append({
                         'english_question': english_question,
                         'question': query,
+                        'example_id': example_id,
                         'answer': [ans['text'] for ans in answer]
                     })
 

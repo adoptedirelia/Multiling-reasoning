@@ -432,3 +432,104 @@ def run_prompting_baseline(llm_engine: BaseEngine, mt2_engine: BaseEngine,
         })
     
     return combined_results
+
+
+def run_prompting_baseline_with_error(llm_engine: BaseEngine, mt2_engine: BaseEngine,
+                           questions: List[str], english_questions: List[str],
+                           languages: List[str] = None,
+                           llm_config: Optional[ModelConfig] = None,
+                           mt2_config: Optional[ModelConfig] = None,
+                           eval_config: Optional[EvalConfig] = None,
+                           mt1_result: Dict[str, str] = None) -> List[Dict[str, str]]:
+    """
+    Run prompting baseline: English questions -> LLM -> (input, eng reasoning, eng output) -> MT2 -> Output
+    """
+    """
+    Run prompting baseline: English questions -> LLM -> (input, eng reasoning, eng output) -> MT2 -> Output
+    
+    Args:
+        llm_engine: LLM model engine for reasoning
+        mt2_engine: MT2 model engine
+        questions: Target language questions (original)
+        english_questions: Pre-translated English questions
+        languages: Question languages
+        llm_config: LLM model configuration (optional)
+        mt2_config: MT2 model configuration (optional)
+        eval_config: Evaluation configuration (optional)
+    
+    Returns:
+        List of dictionaries containing all intermediate and final results
+    """
+    results = [i['llm_result'] for i in mt1_result]
+    # MT2 - Translate back to target language (using MT2_PROMPT, with English question, reasoning, and answer)
+    mt2_results = run_mt2(
+        engine=mt2_engine,
+        questions=questions,
+        english_questions=english_questions,
+        english_thinking_processes=[r.get("reasoning", "") for r in results],
+        english_answers=[r.get("answer", "") for r in results],
+        languages=languages,
+        model_config=mt2_config,
+        eval_config=eval_config
+    )
+    
+    # Combine all results
+    combined_results = []
+    for i in range(len(questions)):
+        combined_results.append({
+            "english_question": english_questions[i],
+            "llm_result": results[i],
+            "mt2_result": mt2_results[i]
+        })
+    
+    return combined_results
+
+
+
+def run_cascade_baseline_with_error(llm_engine: BaseEngine, mt2_engine: BaseEngine,
+                         questions: List[str], english_questions: List[str],
+                         languages: List[str] = None,
+                         llm_config: Optional[ModelConfig] = None,
+                         mt2_config: Optional[ModelConfig] = None,
+                         eval_config: Optional[EvalConfig] = None,
+                         mt1_result: Dict[str, str] = None) -> List[Dict[str, str]]:
+    """
+    Run cascade baseline: English questions -> LLM -> English output -> MT2 -> Output
+    
+    Args:
+        llm_engine: LLM model engine for reasoning
+        mt2_engine: MT2 model engine
+        questions: Target language questions (original)
+        english_questions: Pre-translated English questions
+        languages: Question languages
+        llm_config: LLM model configuration (optional)
+        mt2_config: MT2 model configuration (optional)
+        eval_config: Evaluation configuration (optional)
+    
+    Returns:
+        List of dictionaries containing all intermediate and final results
+    """
+    # Step 1: LLM - Generate English reasoning and answer
+    results = [i['llm_result'] for i in mt1_result]
+    
+    # Step 2: MT2 - Translate back to target language (using MT2_BASE_PROMPT, only English question and answer)
+    mt2_results = run_mt2_base(
+        engine=mt2_engine, 
+        questions=questions, 
+        english_questions=english_questions,
+        english_answers=[r.get("answer", "") for r in results],
+        languages=languages,
+        model_config=mt2_config,
+        eval_config=eval_config
+    )
+    
+    # Combine all results
+    combined_results = []
+    for i in range(len(questions)):
+        combined_results.append({
+            "english_question": english_questions[i],
+            "llm_result": results[i],
+            "mt2_result": mt2_results[i]
+        })
+    
+    return combined_results
