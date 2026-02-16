@@ -32,11 +32,11 @@
 #     --dataset ./dataset/MKQA.json
 
 
-python -m src.eval.input_error \
-    --config configs/eval_config_example.json \
-    --baseline_type prompting \
-    --output_file input_error_mkqa.json \
-    --dataset ./dataset/MKQA.json
+# python -m src.eval.input_error \
+#     --config configs/eval_config_example.json \
+#     --baseline_type prompting \
+#     --output_file input_error_mkqa.json \
+#     --dataset ./dataset/MKQA.json
 
 # python -m src.eval.output_error \
 #     --config configs/eval_config_example.json \
@@ -45,8 +45,33 @@ python -m src.eval.input_error \
 #     --dataset ./dataset/MKQA.json
 
 
-python -m src.eval.input_error \
+# python -m src.eval.input_error \
+#     --config configs/eval_config_example.json \
+#     --baseline_type cascade \
+#     --output_file input_error_cascade_mkqa.json \
+#     --dataset ./dataset/MKQA.json
+
+
+python -m src.eval.output_error_piqa \
+    --config configs/eval_config_example.json \
+    --baseline_type prompting \
+    --output_file output_error_piqa.json \
+    --dataset ./dataset/PIQA.json
+
+python -m src.eval.input_error_piqa \
+    --config configs/eval_config_example.json \
+    --baseline_type prompting \
+    --output_file input_error_piqa.json \
+    --dataset ./dataset/PIQA.json
+
+python -m src.eval.output_error_piqa \
     --config configs/eval_config_example.json \
     --baseline_type cascade \
-    --output_file input_error_cascade_mkqa.json \
-    --dataset ./dataset/MKQA.json
+    --output_file output_error_cascade_piqa.json \
+    --dataset ./dataset/PIQA.json
+
+python -m src.eval.input_error_piqa \
+    --config configs/eval_config_example.json \
+    --baseline_type cascade \
+    --output_file input_error_cascade_piqa.json \
+    --dataset ./dataset/PIQA.json

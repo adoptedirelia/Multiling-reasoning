@@ -48,6 +48,7 @@ class PIQA_Dataset:
                 result[language].append({
                     "question": question,
                     "answer": option_0 if answer == 0 else option_1,
+                    "example_id": row.example_id,
 
                 })
         return result
@@ -90,7 +91,73 @@ class MKQA_Dataset:
 
         return res
 
+class Aya_Dataset:
+    def __init__(self, dataset_path, save_path):
+        self.dataset_path = dataset_path
+        self.save_path = save_path
+        self.language_map = {
+            "Chinese": "zho",
+            "Arabic": "ara",
+            "Japanese": "jpn",
+            "Vietnamese": "vie",
+            "Marathi": "mar",
+            "Amharic": "amh",
+            "Telugu": "tel",
+        }
+        self.language_code_map = {
+            "zho": "Chinese",
+            "arb": "Arabic",
+            "jpn": "Japanese",
+            "vie": "Vietnamese",
+            "mar": "Marathi",
+            "amh": "Amharic",
+            "tel": "Telugu",
+        }
+        self.dataset = self.load_dataset()
+        with open(os.path.join(save_path, "Aya.json"), "w") as f:
+            json.dump(self.dataset, f, indent=4)
+
+    def load_dataset(self):
+        from datasets import load_dataset
+
+        res = {'train': {}, 'test': {}}
+        aya_dataset = load_dataset("CohereLabs/aya_dataset")
+
+        for item in aya_dataset['train']:
+
+            question = item['inputs']
+            answer = item['targets']
+            language = item['language']
+            language_code = item['language_code']
+            if language == 'Arabic':
+                print(language_code)
+            if language_code not in self.language_code_map.keys():
+                continue
+            # language_name = self.language_map[language]
+            language_name = self.language_code_map[language_code]
+            if language_name not in res['train']:
+                res['train'][language_name] = []
+            res['train'][language_name].append({
+                'question': question,
+                'answer': answer,
+            })
+        for item in aya_dataset['test']:
+            question = item['inputs']
+            answer = item['targets']
+            language = item['language']
+            if language not in self.language_map.keys():
+                continue
+
+            if language not in res['test']:
+                res['test'][language] = []
+            res['test'][language].append({
+                'question': question,
+                'answer': answer,
+            })
+        return res
+
 
 if __name__ == "__main__":
-    dataset = PIQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/piqa/data", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
-    dataset = MKQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/mkqa.jsonl", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
+    # dataset = PIQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/piqa/data", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
+    # dataset = MKQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/mkqa.jsonl", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
+    dataset = Aya_Dataset(dataset_path="", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")

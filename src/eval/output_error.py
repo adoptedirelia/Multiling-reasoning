@@ -235,14 +235,16 @@ def main(error_data):
     evaluate_pipeline(config, error_data)
 
 
-def find_examples(id, dataset):
-    unfold_data = [i for item in dataset.values() for i in item]
-
-    for data in unfold_data:
-
-        if str(data['example_id']) == str(id):
-            return data
-    return None
+def find_examples(id, dataset) -> List[Dict[str, str]]:
+    # unfold_data = [i for item in dataset.values() for i in item]
+    output = []
+    for key, value in dataset.items():
+        for data in value:
+            if str(data['example_id']) == str(id):
+                data['language'] = key
+                output.append(data)
+                break
+    return output
 
 if __name__ == "__main__":
     dataset = '/home/dzhang98/code/Multiling-reasoning/dataset/MKQA.json'
@@ -256,7 +258,7 @@ if __name__ == "__main__":
             error = json.loads(line)
             example_id = error['example_id']
             error_group = error['error_group']
-            data = find_examples(example_id, dataset)
+            data_list = find_examples(example_id, dataset)
             if error_group == 'input_err':
                 continue
             else:
@@ -265,8 +267,9 @@ if __name__ == "__main__":
                     'reasoning': error['r_en_err'],
                     'answer': error['y_en_err'],
                 }
-                data['llm_result'] = llm_result
-                data['error'] = error
-                error_data.append(data)
+                for data in data_list:
+                    data['llm_result'] = llm_result
+                    data['error'] = error
+                    error_data.append(data.copy())
 
     main(error_data)

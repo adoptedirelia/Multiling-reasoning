@@ -76,7 +76,7 @@ Required Format:
 [Final answer in {language} goes here]
 </answer>
 
-Input: {question}
+Input:{question}
 English Question:{English_Question}
 English Thinking Process:{English_Thinking_Process}
 English Answer:{English_Answer}

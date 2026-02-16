@@ -1,3 +1,4 @@
+
 """
 MT1-MT2 Pipeline Evaluation Main Code
 """
@@ -164,10 +165,11 @@ def evaluate_pipeline(config: EvalConfig, translation_results: Dict[str, Dict[st
         elif baseline_type == "prompting":
             # Prompting baseline: English questions -> LLM -> (input, eng reasoning, eng output) -> MT2 -> Output
             batch_english_questions = english_questions[i:i+batch_size]
-            batch_results = run_prompting_baseline(
+            batch_results = run_prompting_baseline_with_error(
                 llm_engine, mt2_engine,
                 questions, batch_english_questions, languages,
-                config.llm_config, config.mt2_config, config
+                config.llm_config, config.mt2_config, config,
+                mt1_result=batch_samples
             )
             for j in range(len(batch_samples)):
                 result = {
@@ -229,28 +231,32 @@ def main(error_data):
 
     config = load_config_from_dict(config_dict)
 
+
     evaluate_pipeline(config, error_data)
 
-def find_examples(id, dataset) -> List[Dict[str, str]]:
+
+def find_examples(id, dataset, language) -> List[Dict[str, str]]:
     # unfold_data = [i for item in dataset.values() for i in item]
-    output = []
-    for key, value in dataset.items():
-        for data in value:
-            if str(data['example_id']) == str(id):
-                data['language'] = key
-                output.append(data)
-                break
-    return output
-
-
+    for data in dataset[language]:
+        if data['example_id'] == id:
+            return data
 
 if __name__ == "__main__":
-    # main()
-    
-    dataset = '/home/dzhang98/code/Multiling-reasoning/dataset/MKQA.json'
+
+    language_dict = {
+        'am': 'Amharic',
+        'ar': 'Arabic',
+        'ja': 'Japanese',
+        'zh_cn': 'Chinese',
+        'mr': 'Marathi',
+        'vi': 'Vietnamese',
+        'te': 'Telugu',
+    }
+
+    dataset = '/home/dzhang98/code/Multiling-reasoning/dataset/PIQA.json'
     with open(dataset, 'r', encoding='utf-8') as f:
         dataset = json.load(f)
-    error_data_path = '/home/dzhang98/code/Multiling-reasoning/data_transfer/mkqa_100_samples_corruptions.jsonl'
+    error_data_path = '/home/dzhang98/code/Multiling-reasoning/data_transfer/global_piqa_error_sim.jsonl'
     error_data = []
     with open(error_data_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -258,17 +264,17 @@ if __name__ == "__main__":
             error = json.loads(line)
             example_id = error['example_id']
             error_group = error['error_group']
-            data_list = find_examples(example_id, dataset)
-
+            data = find_examples(example_id, dataset, language_dict[error['lang']])
             if error_group == 'input_err':
-                eng_question = error['x_en_err']
-                for data in data_list:
-                    data['english_question'] = eng_question
-                    data['error'] = error
-                    error_data.append(data.copy())
-                
-            else:
                 continue
+            else:
+                llm_result = {
+                    'question': error['x_en'],
+                    'reasoning': error['r_en_err'],
+                    'answer': error['y_en_err'],
+                }
+                data['llm_result'] = llm_result
+                data['error'] = error
+                error_data.append(data.copy())
 
     main(error_data)
-
