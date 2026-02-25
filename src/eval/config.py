@@ -13,6 +13,7 @@ class ModelConfig:
     max_new_tokens: int = 8192
     temperature: float = 0.7
     top_p: float = 0.9
+    lora_path: str = None
 
 
 @dataclass
@@ -35,6 +36,8 @@ class EvalConfig:
     output_dir: str = "./results"
     output_file: str = "eval_results.json"
     translation_file: str = "mt1_translations.json"
+    intermediate_file: str = "intermediate_results.json"
+    lora_path: str = None
     
     # Baseline type: "end_to_end", "cascade", "prompting", or "mt1_mt2" (default pipeline)
     baseline_type: str = "mt1_mt2"

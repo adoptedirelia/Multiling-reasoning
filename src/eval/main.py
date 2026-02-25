@@ -67,10 +67,8 @@ def evaluate_pipeline(config: EvalConfig, translation_results: Dict[str, Dict[st
     """
     # Load dataset
     print(f"Loading dataset from {config.dataset_path}...")
-    if translation_results is None:
-        dataset = load_json_dataset(config.dataset_path)
-    else:
-        dataset = translation_results
+
+    dataset = translation_results
     
     if config.num_samples:
         dataset = dataset[:config.num_samples]
@@ -85,48 +83,28 @@ def evaluate_pipeline(config: EvalConfig, translation_results: Dict[str, Dict[st
     all_languages = [sample.get('language', '') for sample in dataset]
     all_ground_truths = [sample.get('answer', '') for sample in dataset]
     english_questions = [sample.get('english_question', '') for sample in dataset]
-    # Step 1: Translate all questions to English (MT1 step) - only for cascade and prompting baselines
-    mt1_engine = create_engine(config.mt1_config)
-    mt1_engine.load_model()
+
     # Initialize engines based on baseline type
     if baseline_type == "end_to_end":
         # End-to-end: only need one engine
         print(f"Loading model: {config.mt1_config.model_name}...")
         
-        engine = mt1_engine
-    elif baseline_type in ["cascade", "prompting"]:
-        # LLM engine (for reasoning)
-        if config.llm_config and config.llm_config.model_name != config.mt1_config.model_name:
-            print(f"Loading LLM model: {config.llm_config.model_name}...")
-            llm_engine = create_engine(config.llm_config)
-            llm_engine.load_model()
-        else:
-            print("Using MT1 model as LLM model")
-            llm_engine = mt1_engine
-        
-        # MT2 engine
-        if config.mt2_config and config.mt2_config.model_name != config.mt1_config.model_name:
-            print(f"Loading MT2 model: {config.mt2_config.model_name}...")
-            mt2_engine = create_engine(config.mt2_config)
-            mt2_engine.load_model()
-        else:
-            print("Using same model for MT1 and MT2")
-            mt2_engine = mt1_engine
-    else:
-        raise ValueError(f"Unsupported baseline type: {config.baseline_type}")
+        engine = create_engine(config.mt1_config)
+        engine.load_model()
+
     
     # Run evaluation
     results = []
     batch_size = config.batch_size
     
-    for i in range(0, len(dataset), batch_size):
-        batch_samples = dataset[i:i+batch_size]
-        questions = all_questions[i:i+batch_size]
-        languages = all_languages[i:i+batch_size]
-        ground_truths = all_ground_truths[i:i+batch_size]
-        
-        if baseline_type == "end_to_end":
-            # End-to-end baseline
+    if baseline_type == "end_to_end":
+        # End-to-end baseline: process in batches
+        for i in range(0, len(dataset), batch_size):
+            batch_samples = dataset[i:i+batch_size]
+            questions = all_questions[i:i+batch_size]
+            languages = all_languages[i:i+batch_size]
+            ground_truths = all_ground_truths[i:i+batch_size]
+            
             batch_results = run_end_to_end(engine, questions, languages, config.mt1_config, config)
             for j in range(len(batch_samples)):
                 result = {
@@ -137,46 +115,148 @@ def evaluate_pipeline(config: EvalConfig, translation_results: Dict[str, Dict[st
                     'result': batch_results[j]
                 }
                 results.append(result)
-        
-        elif baseline_type == "cascade":
-            # Cascade baseline: English questions -> LLM -> English output -> MT2 -> Output
+    
+    elif baseline_type == "cascade":
+        # Cascade baseline: 
+        # Step 1: Process all questions through reasoning first
+        print("Step 1: Running reasoning on all questions...")
+
+        if os.path.exists(os.path.join(config.output_dir, config.intermediate_file)):
+            all_llm_results = load_json_dataset(os.path.join(config.output_dir, config.intermediate_file))
+        else:
+            all_llm_results = []
+            llm_engine = create_engine(config.llm_config)
+            llm_engine.load_model()
+            for i in range(0, len(dataset), batch_size):
+                batch_english_questions = english_questions[i:i+batch_size]
+                batch_llm_results = run_reasoning(
+                    llm_engine, 
+                    batch_english_questions, 
+                    model_config=config.llm_config, 
+                    eval_config=config
+                )
+                all_llm_results.extend(batch_llm_results)
+            
+            print(f"Reasoning completed. Processed {len(all_llm_results)} samples.")
+            if config.save_intermediate:
+                output_path = os.path.join(config.output_dir, config.intermediate_file)
+                print(f"Saving intermediate results to {output_path}...")
+                save_results(all_llm_results, output_path)
+            del llm_engine
+        # Step 2: Process all reasoning results through MT2
+        print("Step 2: Running MT2 on all reasoning results...")
+        if config.lora_path:
+            config.mt2_config.lora_path = config.lora_path
+            mt2_engine = create_engine(config.mt2_config)
+            mt2_engine.load_model()
+        else:
+            mt2_engine = create_engine(config.mt2_config)
+            mt2_engine.load_model()
+        all_mt2_results = []
+        for i in range(0, len(dataset), batch_size):
+            batch_questions = all_questions[i:i+batch_size]
             batch_english_questions = english_questions[i:i+batch_size]
-            batch_results = run_cascade_baseline(
-                llm_engine, mt2_engine,
-                questions, batch_english_questions, languages,
-                config.llm_config, config.mt2_config, config
+            batch_languages = all_languages[i:i+batch_size]
+            batch_llm_results = all_llm_results[i:i+batch_size]
+            
+            batch_mt2_results = run_mt2_base(
+                engine=mt2_engine,
+                questions=batch_questions,
+                english_questions=batch_english_questions,
+                english_answers=[r.get("answer", "") for r in batch_llm_results],
+                languages=batch_languages,
+                model_config=config.mt2_config,
+                eval_config=config
             )
-            for j in range(len(batch_samples)):
-                result = {
-                    'sample_idx': i + j,
-                    'question': questions[j],
-                    'language': languages[j],
-                    'ground_truth': ground_truths[j],
-                    'english_question': batch_results[j].get('english_question', ''),
-                    'llm_result': batch_results[j].get('llm_result', {}),
-                    'mt2_result': batch_results[j].get('mt2_result', {})
-                }
-                results.append(result)
+            all_mt2_results.extend(batch_mt2_results)
         
-        elif baseline_type == "prompting":
-            # Prompting baseline: English questions -> LLM -> (input, eng reasoning, eng output) -> MT2 -> Output
+        print(f"MT2 completed. Processed {len(all_mt2_results)} samples.")
+        
+        # Step 3: Combine all results
+        for i in range(len(dataset)):
+            result = {
+                'sample_idx': i,
+                'question': all_questions[i],
+                'language': all_languages[i],
+                'ground_truth': all_ground_truths[i],
+                'english_question': english_questions[i],
+                'llm_result': all_llm_results[i],
+                'mt2_result': all_mt2_results[i]
+            }
+            results.append(result)
+    
+    elif baseline_type == "prompting":
+        # Prompting baseline:
+        # Step 1: Process all questions through reasoning first
+
+        if os.path.exists(os.path.join(config.output_dir, config.intermediate_file)):
+            all_llm_results = load_json_dataset(os.path.join(config.output_dir, config.intermediate_file))
+        else:
+            print("Step 1: Running reasoning on all questions...")
+            all_llm_results = []
+            llm_engine = create_engine(config.llm_config)
+            llm_engine.load_model()
+            for i in range(0, len(dataset), batch_size):
+                batch_english_questions = english_questions[i:i+batch_size]
+                batch_llm_results = run_reasoning(
+                    llm_engine,
+                    batch_english_questions,
+                    model_config=config.llm_config,
+                    eval_config=config
+                )
+
+                all_llm_results.extend(batch_llm_results)
+            
+            print(f"Reasoning completed. Processed {len(all_llm_results)} samples.")
+            if config.save_intermediate:
+                output_path = os.path.join(config.output_dir, config.intermediate_file)
+                print(f"Saving intermediate results to {output_path}...")
+                save_results(all_llm_results, output_path)
+            del llm_engine
+        # Step 2: Process all reasoning results through MT2
+        print("Step 2: Running MT2 on all reasoning results...")
+        if config.lora_path:
+            config.mt2_config.lora_path = config.lora_path
+            mt2_engine = create_engine(config.mt2_config)
+            mt2_engine.load_model()
+        else:
+            mt2_engine = create_engine(config.mt2_config)
+            mt2_engine.load_model()
+        all_mt2_results = []
+
+        for i in range(0, len(dataset), batch_size):
+            batch_questions = all_questions[i:i+batch_size]
             batch_english_questions = english_questions[i:i+batch_size]
-            batch_results = run_prompting_baseline(
-                llm_engine, mt2_engine,
-                questions, batch_english_questions, languages,
-                config.llm_config, config.mt2_config, config
+            batch_languages = all_languages[i:i+batch_size]
+            batch_llm_results = all_llm_results[i:i+batch_size]
+            
+            batch_mt2_results = run_mt2(
+                engine=mt2_engine,
+                questions=batch_questions,
+                english_questions=batch_english_questions,
+                english_thinking_processes=[r.get("reasoning", "") for r in batch_llm_results],
+                english_answers=[r.get("answer", "") for r in batch_llm_results],
+                languages=batch_languages,
+                model_config=config.mt2_config,
+                eval_config=config
             )
-            for j in range(len(batch_samples)):
-                result = {
-                    'sample_idx': i + j,
-                    'question': questions[j],
-                    'language': languages[j],
-                    'ground_truth': ground_truths[j],
-                    'english_question': batch_results[j].get('english_question', ''),
-                    'llm_result': batch_results[j].get('llm_result', {}),
-                    'mt2_result': batch_results[j].get('mt2_result', {})
-                }
-                results.append(result)
+            print(batch_mt2_results)
+            all_mt2_results.extend(batch_mt2_results)
+        
+        print(f"MT2 completed. Processed {len(all_mt2_results)} samples.")
+        
+        # Step 3: Combine all results
+        for i in range(len(dataset)):
+            result = {
+                'sample_idx': i,
+                'question': all_questions[i],
+                'language': all_languages[i],
+                'ground_truth': all_ground_truths[i],
+                'english_question': english_questions[i],
+                'llm_result': all_llm_results[i],
+                'mt2_result': all_mt2_results[i]
+            }
+            results.append(result)
         
 
     # Save results
@@ -199,7 +279,9 @@ def main():
     parser.add_argument("--baseline_type", type=str, help="Baseline type (end_to_end, cascade, prompting)")
     parser.add_argument("--output_file", type=str, help="Output file name (overrides config file)")
     parser.add_argument("--translation_file", type=str, help="Translation file name (overrides config file)")
-    
+    parser.add_argument("--save_intermediate", type=bool, help="Save intermediate results (overrides config file)")
+    parser.add_argument("--lora_path", type=str, help="Lora path (overrides config file)")
+    parser.add_argument("--intermediate_file", type=str, help="Intermediate file name (overrides config file)")
     args = parser.parse_args()
     
     # Load configuration
@@ -225,9 +307,16 @@ def main():
         config_dict['output_file'] = args.output_file
     if args.translation_file:
         config_dict['translation_file'] = args.translation_file
+    if args.save_intermediate:
+        config_dict['save_intermediate'] = args.save_intermediate
+    if args.lora_path:
+        config_dict['lora_path'] = args.lora_path
+    if args.intermediate_file:
+        config_dict['intermediate_file'] = args.intermediate_file
     config = load_config_from_dict(config_dict)
 
     # Run evaluation
+
     if os.path.exists(os.path.join(config.output_dir, config.translation_file)):
         print(f"Translation results already exist at {os.path.join(config.output_dir, config.translation_file)}")
         translation_results = load_json_dataset(os.path.join(config.output_dir, config.translation_file))

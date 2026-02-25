@@ -1,12 +1,14 @@
 from typing import Optional, List, Union
 from .base import BaseEngine
 from vllm import LLM, SamplingParams
+from vllm.lora.request import LoRARequest
+
 
 class Qwen3Engine(BaseEngine):
     """Qwen3 model engine implementation"""
     
     def __init__(self, model_name: str, device_map: str = "auto", 
-                 torch_dtype: str = "auto", attn_implementation: str = "flash_attention_2", **kwargs):
+                 torch_dtype: str = "auto", attn_implementation: str = "flash_attention_2", lora_path: Optional[str] = None, **kwargs):
         """
         Initialize Qwen3 engine
         
@@ -21,7 +23,7 @@ class Qwen3Engine(BaseEngine):
         self.device_map = device_map
         self.torch_dtype = torch_dtype
         self.attn_implementation = attn_implementation
-
+        self.lora_path = lora_path
         # vLLM-specific options (can be passed via **kwargs)
         self.tensor_parallel_size = kwargs.pop("tensor_parallel_size", 1)
         self.llm_kwargs = kwargs
@@ -32,6 +34,7 @@ class Qwen3Engine(BaseEngine):
         self.model = LLM(
             model=self.model_name,
             tensor_parallel_size=self.tensor_parallel_size,
+            enable_lora=True,
             **self.llm_kwargs,
         )
     
@@ -104,7 +107,11 @@ class Qwen3Engine(BaseEngine):
             top_p=top_p,
             **kwargs,
         )
+        if self.lora_path:
+            lora_request = LoRARequest('adapter',1,self.lora_path)
+        else:
+            lora_request = None
 
-        outputs = self.model.generate(prompts, sampling_params=sampling_params)
+        outputs = self.model.generate(prompts, sampling_params=sampling_params, lora_request=lora_request)
 
         return [output.outputs[0].text.strip("\n") for output in outputs]

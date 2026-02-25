@@ -1,8 +1,7 @@
 {
-  "model_name": "Qwen/Qwen2.5-7B",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
   "output_dir": "./checkpoints/mt2_model",
-  "train_data_path": "results/dataset.json",
-  "val_data_path": "results/dataset.json",
+  "train_data_path": "results/train_example_GPT.json",
   "num_epochs": 3,
   "batch_size": 4,
   "learning_rate": 2e-5,
@@ -19,10 +18,9 @@
   "save_total_limit": 3,
   "seed": 42,
   "fp16": false,
-  "bf16": false,
+  "bf16": true,
   "dataloader_num_workers": 4,
   "logging_steps": 10,
   "device_map": "auto",
-  "torch_dtype": "auto",
-  "deepspeed_config_path": null
+  "torch_dtype": "bfloat16"
 }

@@ -1,222 +1,184 @@
-"""
-MT2 Trainer
-"""
-import os
-import json
 import torch
-from torch.utils.data import DataLoader
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    TrainingArguments,
-    Trainer,
-    DataCollatorForLanguageModeling
-)
-from typing import Optional
+from datasets import load_dataset
+from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from trl import SFTTrainer, SFTConfig
+from peft import LoraConfig
+from config import TrainConfig
+import json
+import warnings
+warnings.filterwarnings("ignore")
 
-from src.train.config import TrainConfig
-from src.train.dataset import MT2Dataset
 
-from typing import List, Dict
+from transformers import TrainerCallback
+import torch
 
-class CollateFn:
-    def __init__(self, tokenizer: AutoTokenizer, max_length: int):
+import torch
+
+class SimpleCompletionOnlyCollator:
+    def __init__(self, tokenizer, response_template):
         self.tokenizer = tokenizer
-        self.max_length = max_length
+        self.response_template = response_template
 
-    def __call__(self, batch: List[Dict[str, str]]) -> Dict:
-        """Batch processing function"""
-        # Extract texts
-        texts = [item['full_text'] for item in batch]
+    def find_position(self, input_ids, response_ids):
+        input_ids = input_ids.tolist()
+        for i in range(len(input_ids)):
+            if input_ids[i:i+len(response_ids)] == response_ids:
+                return i
+        return None
+
+
+    def __call__(self, examples):
+
+
+        messages = [example["message"] for example in examples]
+        inputs = self.tokenizer(messages, add_special_tokens=True,return_tensors="pt",padding=True)
+
+
+
+        labels = inputs["input_ids"].clone()
+        attention_mask = inputs.get("attention_mask", None)
         
-        # Tokenize
-        encodings = self.tokenizer(
-            texts,
-            truncation=True,
-            padding=True,
-            max_length=self.max_length,
-            return_tensors='pt'
-        )
-        
-        # Create labels (same as input_ids, but need to mask input part)
-        labels = encodings['input_ids'].clone()
-        
-        # Find position after "Output:" in each sample, only calculate loss for that part
-        for i, item in enumerate(batch):
-            input_text = item['input_text']
-            # Tokenize input part
-            input_encodings = self.tokenizer(
-                input_text,
-                truncation=True,
-                max_length=self.max_length,
-                return_tensors='pt'
-            )
-            input_length = input_encodings['input_ids'].shape[1]
+        for i in range(len(inputs["input_ids"])):
             
-            # Set labels for input part to -100 (ignore loss)
-            labels[i, :input_length] = -100
-        
-        return {
-            'input_ids': encodings['input_ids'],
-            'attention_mask': encodings['attention_mask'],
-            'labels': labels
-        }
+            
+            inputs_ids = inputs["input_ids"][i]
+            response_ids = self.tokenizer.encode(self.response_template, add_special_tokens=False)
+            start_idx = self.find_position(inputs_ids, response_ids)
 
 
+            
+            if start_idx == -1:
+                labels[i][:] = -100
+                print(f"Warning: Could not find assistant start token in sample {i}")
+            else:
+                labels[i][:start_idx+2] = -100
+
+            
+
+            if attention_mask is not None:
+
+                labels[i][attention_mask[i] == 0] = -100
+
+        inputs["labels"] = labels
+
+
+        return inputs
 
 class MT2Trainer:
-    """MT2 Model Trainer"""
-    
     def __init__(self, config: TrainConfig):
-        """
-        Initialize trainer
-        
-        Args:
-            config: Training configuration
-        """
+
         self.config = config
-        self.model = None
-        self.tokenizer = None
-        self.trainer = None
-    
+        self.model_name = config.model_name
+        self.ANSWER_PREFIX = "Output:\n"
+        # self.ANSWER_PREFIX = "[Your output goes here]"
+        self.ANSWER_BEGIN = "<answer>"
+        self.ANSWER_END = "</answer>"
+
+
     def setup_model(self):
-        """Setup model and tokenizer"""
-        print(f"Loading model and tokenizer from {self.config.model_name}...")
-        
-        self.tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-        
-        # Determine dtype
-        dtype_map = {
-            "auto": "auto",
-            "float16": torch.float16,
-            "bfloat16": torch.bfloat16,
-            "float32": torch.float32
-        }
-        dtype = dtype_map.get(self.config.torch_dtype, "auto")
-        
-        # When using DeepSpeed, device_map should be None or not set
-        # DeepSpeed will handle device placement
-        device_map = None if self.config.deepspeed_config_path else self.config.device_map
-        
-        self.model = AutoModelForCausalLM.from_pretrained(
+        tokenizer = AutoTokenizer.from_pretrained(self.config.model_name, use_fast=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8 else torch.float16
+
+        model = AutoModelForCausalLM.from_pretrained(
             self.config.model_name,
-            torch_dtype=dtype if dtype != "auto" else "auto",
-            device_map=device_map
+            torch_dtype=dtype,
+            device_map=self.config.device_map if self.config.deepspeed_config_path is None else None,
         )
-        
-        if self.config.deepspeed_config_path:
-            print(f"DeepSpeed enabled with config: {self.config.deepspeed_config_path}")
-        print("Model and tokenizer loaded successfully!")
-    
+
+        return model, tokenizer
+
+    def build_text(self, example):
+        prompt = example["input"].rstrip()
+
+        ans = example["answer"].strip()
+        if not ans.startswith(self.ANSWER_BEGIN):
+            ans = f"{self.ANSWER_BEGIN}{ans}{self.ANSWER_END}"
+        # return {"prompt": prompt, "completion": ans}
+        return {"message": prompt + "\n" + ans}
+
     def prepare_datasets(self):
-        """Prepare training and validation datasets"""
-        print("Preparing datasets...")
-        
-        train_dataset = MT2Dataset(
-            data_path=self.config.train_data_path,
-            tokenizer=self.tokenizer,
-            max_length=self.config.max_length,
-            is_training=True
-        )
-        
-        val_dataset = None
-        if self.config.val_data_path:
-            val_dataset = MT2Dataset(
-                data_path=self.config.val_data_path,
-                tokenizer=self.tokenizer,
-                max_length=self.config.max_length,
-                is_training=False
-            )
-        
-        print(f"Train dataset size: {len(train_dataset)}")
-        if val_dataset:
-            print(f"Val dataset size: {len(val_dataset)}")
-        
+        train_dataset = load_dataset("json", data_files=self.config.train_data_path, split="train")
+        val_dataset = load_dataset("json", data_files=self.config.val_data_path, split="train")
+        train_dataset = train_dataset.map(self.build_text, remove_columns=train_dataset.column_names)
+        val_dataset = val_dataset.map(self.build_text, remove_columns=val_dataset.column_names)
+
         return train_dataset, val_dataset
-    
+        
     def train(self):
-        """Start training"""
-        # Setup model
-        self.setup_model()
-        
-        # Prepare datasets
         train_dataset, val_dataset = self.prepare_datasets()
-        
-        # Data collator
-        data_collator = DataCollatorForLanguageModeling(
-            tokenizer=self.tokenizer,
-            mlm=False  # Causal language modeling, not masked language modeling
+
+        model, tokenizer = self.setup_model()
+
+        # data_collator = DataCollatorForCompletionOnlyLM(
+        #     response_template=self.ANSWER_PREFIX,
+        #     tokenizer=tokenizer,
+        # )
+
+
+
+        lora_config = LoraConfig(
+            r=self.config.lora_r,
+            lora_alpha=self.config.lora_alpha,
+            lora_dropout=self.config.lora_dropout,
+            bias="none",
+            task_type="CAUSAL_LM",
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
         )
-        
-        # Training arguments
-        training_args = TrainingArguments(
+
+        args = SFTConfig(
             output_dir=self.config.output_dir,
-            num_train_epochs=self.config.num_epochs,
             per_device_train_batch_size=self.config.batch_size,
-            per_device_eval_batch_size=self.config.batch_size,
+            gradient_accumulation_steps=self.config.gradient_accumulation_steps,
             learning_rate=self.config.learning_rate,
             warmup_steps=self.config.warmup_steps,
-            max_grad_norm=self.config.max_grad_norm,
-            gradient_accumulation_steps=self.config.gradient_accumulation_steps,
-            weight_decay=self.config.weight_decay,
-            adam_beta1=self.config.adam_beta1,
-            adam_beta2=self.config.adam_beta2,
-            lr_scheduler_type=self.config.lr_scheduler_type,
-            save_steps=self.config.save_steps,
-            eval_steps=self.config.eval_steps,
-            save_total_limit=self.config.save_total_limit,
+            num_train_epochs=self.config.num_epochs,
             logging_steps=self.config.logging_steps,
-            fp16=self.config.fp16,
+            save_steps=self.config.save_steps,
+            save_total_limit=self.config.save_total_limit,
             bf16=self.config.bf16,
-            dataloader_num_workers=self.config.dataloader_num_workers,
-            seed=self.config.seed,
-            remove_unused_columns=False,
-            report_to="none",  # Don't use wandb etc.
-            deepspeed=self.config.deepspeed_config_path,  # DeepSpeed config file path
+            fp16=self.config.fp16,
+            report_to="none",
+            deepspeed=self.config.deepspeed_config_path,
+
         )
-        
-        # Create Trainer
-        self.trainer = Trainer(
-            model=self.model,
-            args=training_args,
+        args.dataset_kwargs = {"skip_prepare_dataset": True}
+        args.remove_unused_columns = False
+        trainer = SFTTrainer(
+            model=model,
             train_dataset=train_dataset,
             eval_dataset=val_dataset,
-            data_collator=CollateFn(self.tokenizer, self.config.max_length),
-            tokenizer=self.tokenizer,
+            data_collator=SimpleCompletionOnlyCollator(tokenizer, self.ANSWER_PREFIX), 
+            peft_config=lora_config if self.config.use_lora else None,
+            args=args,
         )
-        
-        # Start training
+        # sample_prompt = train_dataset[0]["text"].split("<answer>")[0]
+
+        # trainer.add_callback(
+        #     PrintOutputCallback(tokenizer, sample_prompt, interval=2)
+        # )
         print("Starting training...")
-        self.trainer.train()
+        trainer.train()
         
         # Save final model
         print(f"Saving final model to {self.config.output_dir}...")
-        self.trainer.save_model()
-        self.tokenizer.save_pretrained(self.config.output_dir)
+        trainer.save_model()
+        trainer.tokenizer.save_pretrained(self.config.output_dir)
         
         print("Training completed!")
 
-
 def main():
     """Main function"""
-    import argparse
+
     
-    parser = argparse.ArgumentParser(description="MT2 Model Training")
-    parser.add_argument("--config", type=str, required=True, help="Training configuration file path (JSON format)")
-    
-    args = parser.parse_args()
-    
-    # Load configuration
-    with open(args.config, 'r', encoding='utf-8') as f:
-        config_dict = json.load(f)
-    
-    config = TrainConfig(**config_dict)
+    config = TrainConfig()
     
     # Create trainer and start training
     trainer = MT2Trainer(config)
     trainer.train()
+
 
 
 if __name__ == "__main__":

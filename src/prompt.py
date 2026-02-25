@@ -47,19 +47,12 @@ Output:
 """
 
 MT2_BASE_PROMPT = """
-You are an advanced reasoning assistant. You will be provided with a question, the English question and the English answer. You need to answer the question in the {language}. You need to answer the question in cultural context of the {language}.
+You are an advanced translation assistant. You will be provided with a sentence in English. You need to translate the sentence to {language}.
 
 Required Format:
-<think>
-[Detailed step-by-step logic and analysis in {language} goes here]
-</think>
 <answer>
 [Final answer in {language} goes here]
 </answer>
-
-Input: {question}
-English Question:{English_Question}
-English Answer:{English_Answer}
 
 Output:
 """
@@ -69,9 +62,6 @@ You are an advanced reasoning assistant. You will be provided with a question, t
 
 
 Required Format:
-<think>
-[Detailed step-by-step logic and analysis in {language} goes here]
-</think>
 <answer>
 [Final answer in {language} goes here]
 </answer>
@@ -101,5 +91,4 @@ Required Format:
 
 Input: {question}
 Output:
-
 """

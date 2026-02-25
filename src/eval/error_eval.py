@@ -90,7 +90,7 @@ def main():
     parser.add_argument(
         "--input",
         type=str,
-        required=True,
+        default="./results/cascade_piqa_lora.json",
         help="path to output_error_cascade_mkqa.json",
     )
     args = parser.parse_args()

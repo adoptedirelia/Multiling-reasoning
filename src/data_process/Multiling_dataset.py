@@ -19,8 +19,6 @@ class PIQA_Dataset:
 
         self.dataset = self.load_dataset()
 
-        with open(os.path.join(save_path, "PIQA.json"), "w") as f:
-            json.dump(self.dataset, f, indent=4)
 
 
     def load_dataset(self):
@@ -52,6 +50,7 @@ class PIQA_Dataset:
 
                 })
         return result
+
 class MKQA_Dataset:
     def __init__(self, dataset_path, save_path):
         self.dataset_path = dataset_path
@@ -66,7 +65,18 @@ class MKQA_Dataset:
         with open(os.path.join(save_path, "MKQA.json"), "w") as f:
             json.dump(self.dataset, f, indent=4)
 
-
+        eval_dataset = {}
+        train_dataset = {}
+        ratio = 0.8
+        for language,data in self.dataset.items():
+            train_data = data[500:]
+            eval_data = data[:500]
+            train_dataset[language] = train_data
+            eval_dataset[language] = eval_data
+        with open(os.path.join(save_path, "MKQA_train.json"), "w") as f:
+            json.dump(train_dataset, f, indent=4)
+        with open(os.path.join(save_path, "MKQA_eval.json"), "w") as f:
+            json.dump(eval_dataset, f, indent=4)
     def load_dataset(self):
         res = {}
         with open(self.dataset_path, 'r') as f:
@@ -158,6 +168,6 @@ class Aya_Dataset:
 
 
 if __name__ == "__main__":
-    # dataset = PIQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/piqa/data", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
+    dataset = PIQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/piqa/data", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
     # dataset = MKQA_Dataset(dataset_path="/home/dzhang98/code/Multiling-data/mkqa.jsonl", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
-    dataset = Aya_Dataset(dataset_path="", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")
+    # dataset = Aya_Dataset(dataset_path="", save_path="/home/dzhang98/code/Multiling-reasoning/dataset")

@@ -147,7 +147,8 @@ def create_engine(model_config: ModelConfig) -> BaseEngine:
             model_name=model_config.model_name,
             device_map=model_config.device_map,
             torch_dtype=model_config.torch_dtype,
-            attn_implementation=model_config.attn_implementation
+            attn_implementation=model_config.attn_implementation,
+            lora_path=model_config.lora_path,
         )
     else:
         raise ValueError(f"Unsupported model type: {model_config.model_type}")
@@ -204,10 +205,8 @@ def run_mt2_base(engine: BaseEngine, questions: str, english_questions: str, eng
     prompts = []
     for i in range(len(questions)):
         prompt = MT2_BASE_PROMPT.format(
-            question=questions[i],
-            language=languages[i],
-            English_Question=english_questions[i],
-            English_Answer=english_answers[i]
+            English_Answer=english_answers[i],
+            language=languages[i]
         )
         prompts.append(prompt)
     
@@ -261,7 +260,8 @@ def run_mt2(engine: BaseEngine, questions: str, english_questions: str, english_
     
     # Generate
     outputs = engine.generate_batch(prompts=prompts, **gen_kwargs)
-    
+    print(prompts)
+    print(outputs)
     # Extract structured information
     results = [extract_mt2_output(output) for output in outputs]
     return results

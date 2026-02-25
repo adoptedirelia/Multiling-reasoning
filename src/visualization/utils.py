@@ -245,13 +245,12 @@ class ModelAttentionAnalyzer:
 
         if start_idx is None:
             # If no exact match found, try re-encoding
-            text_tokens_retry = self.tokenizer.encode(text, add_special_tokens=False)
+            text_tokens_retry = self.tokenizer.encode(':' + text + '\n', add_special_tokens=False)
             for i in range(len(input_ids) - len(text_tokens_retry) + 1):
                 if input_ids[i:i+len(text_tokens_retry)] == text_tokens_retry:
                     start_idx = i
                     end_idx = i + len(text_tokens_retry)
                     break
-        
         return start_idx, end_idx
     
     def find_question_token_indices(
@@ -309,6 +308,7 @@ class ModelAttentionAnalyzer:
                 else:
                     print(f"Warning: Could not find {part_name} token positions")
                     part_indices[part_name] = None
+
             else:
                 print(f"Warning: {part_name} text is empty")
                 part_indices[part_name] = None
@@ -973,6 +973,7 @@ class ModelAttentionAnalyzer:
         
         # Find token positions for all parts
         input_ids = result["model_inputs"].input_ids[0].cpu().tolist()
+
         part_indices = self.find_multipart_token_indices(full_prompt, parts, input_ids)
         
         # Get token texts for each part

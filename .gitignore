@@ -7,3 +7,5 @@ outputs/
 src/evaluation/scripts/
 logs/
 ml-mkqa/
+slurm_jobs/
+training_data/

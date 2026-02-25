@@ -4,9 +4,9 @@ MT2 Training Dataset
 import json
 from typing import Dict, List, Optional
 from torch.utils.data import Dataset
-from transformers import PreTrainedTokenizer
+from transformers import PreTrainedTokenizer, AutoTokenizer
 
-from src.prompt import MT2_PROMT
+from src.prompt import MT2_PROMPT
 
 
 class MT2Dataset(Dataset):
@@ -64,38 +64,37 @@ class MT2Dataset(Dataset):
         # Get input
         question = sample.get('question', '')
         language = sample.get('language', '')
-        mt1_result = sample.get('mt1_result', '')
+        english_question = sample.get('english_question', '')
+        english_answer = sample.get('english_answer', '')
+        mt1_result = sample.get('llm_result', '')
         english_reasoning = mt1_result.get('reasoning', '') or mt1_result.get('English_Thinking_Process', '')
-        
+        english_answer = mt1_result.get('answer', '')
+
         # Build input prompt
-        input_text = MT2_PROMT.format(
+        input_text = MT2_PROMPT.format(
             question=question,
             language=language,
-            English_Thinking_Process=english_reasoning
-        ).replace("Output:", "").strip()  # Remove Output: as this is what we want to generate
-        
-        # Get output (target language CoT and answer)
-        mt2_result = sample.get('mt2_result', '')
-        target_reasoning = mt2_result.get('reasoning', '') or mt2_result.get('reasoning', '')
-        target_answer = mt2_result.get('answer', '') or mt2_result.get('answer', '')
+            English_Question=english_question,
+            English_Thinking_Process=english_reasoning,
+            English_Answer=english_answer
+        )
+
         
         # Build output text
-        output_text = ""
-        if target_reasoning:
-            output_text += f"<think>{target_reasoning}</think>\n"
-        if target_answer:
-            output_text += f"<answer>{target_answer}</answer>"
+        output_text = f"<answer>{sample.get('ground_truth', '')}</answer>"
         
         # Build full text (for training)
         full_text = input_text + "\n" + output_text
         
-        return {
+        dict = {
             'input_text': input_text,
             'output_text': output_text,
             'full_text': full_text,
             'question': question,
             'language': language
         }
+        
+        return dict
     
     def collate_fn(self, batch: List[Dict[str, str]]) -> Dict:
         """Batch processing function"""
@@ -134,3 +133,36 @@ class MT2Dataset(Dataset):
             'attention_mask': encodings['attention_mask'],
             'labels': labels
         }
+
+if __name__ == "__main__":
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+    dataset = MT2Dataset(data_path="results/train_example_GPT.json", tokenizer=tokenizer, max_length=2048, is_training=True)
+
+    res = []
+    ratio = 0.9
+    type_list ={}
+    for i in dataset:
+        language = i['language']
+        if language not in type_list:
+            type_list[language] = []
+        type_list[language].append(i)
+        # res.append({'input':i['input_text'], 'answer':i['output_text']})
+    train_data_out = []
+    val_data_out = []
+    for language, data in type_list.items():
+        train_data = data[:int(len(data) * ratio)]
+        val_data = data[int(len(data) * ratio):]
+        train_data_out.extend([{'input': item['input_text'], 'answer': item['output_text']} for item in train_data])
+        val_data_out.extend([{'input': item['input_text'], 'answer': item['output_text']} for item in val_data])
+    import os
+    if os.path.exists('results/train.jsonl'):
+        os.remove('results/train.jsonl')
+    if os.path.exists('results/val.jsonl'):
+        os.remove('results/val.jsonl')
+    with open('results/train.jsonl', 'w', encoding='utf-8') as f:
+        for item in train_data_out:
+            f.write(json.dumps(item, ensure_ascii=False) + '\n')
+    with open('results/val.jsonl', 'w', encoding='utf-8') as f:
+        for item in val_data_out:
+            f.write(json.dumps(item, ensure_ascii=False) + '\n')
+    print(val_data_out[0])
