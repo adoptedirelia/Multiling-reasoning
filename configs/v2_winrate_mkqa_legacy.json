@@ -1,0 +1,43 @@
+{
+  "run_name": "v2_winrate_mkqa_legacy",
+  "dataset": {
+    "dataset_type": "mkqa",
+    "mkqa_path": "src/evaluation/error_prop/ml-mkqa/dataset/mkqa.jsonl.gz",
+    "langs": ["zh_cn", "ar", "vi", "ja"],
+    "max_examples": 500,
+    "seed": 42
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "mt2": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    }
+  },
+  "eval": {
+    "methods": ["win_rate"],
+    "prediction_field": "y_l",
+    "win_judge_model_name": "gpt-4.1-mini",
+    "win_judge_api_key_env": "OPENAI_API_KEY",
+    "win_judge_timeout_s": 120,
+    "win_max_new_tokens": 8,
+    "win_temperature": 0.0,
+    "win_top_p": 1.0
+  },
+  "outputs": {
+    "metrics_json": "results/v2/winrate/mkqa_legacy_winrate.json",
+    "logs_dir": "logs"
+  }
+}
+

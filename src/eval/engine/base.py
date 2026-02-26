@@ -45,5 +45,9 @@ class BaseEngine(ABC):
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit"""
-        # Can clean up resources here
-        pass
+        self.shutdown()
+
+    def shutdown(self):
+        """Best-effort resource cleanup."""
+        self.model = None
+        self.tokenizer = None

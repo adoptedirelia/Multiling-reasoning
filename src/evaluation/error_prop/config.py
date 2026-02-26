@@ -12,10 +12,14 @@ class ModelEngineConfig(ModelConfig):
 
 @dataclass
 class DatasetConfig:
-    mkqa_path: str
+    mkqa_path: str = ""
     langs: List[str] = field(default_factory=lambda: ["zh_cn", "ar", "vi", "ja"])
     max_examples: int = 100
     seed: int = 42
+    dataset_type: str = "mkqa"
+    hf_name: Optional[str] = None
+    hf_split: str = "train"
+    hf_configs: Optional[Dict[str, str]] = None
 
 
 @dataclass
@@ -67,6 +71,12 @@ def load_config(path: str) -> ErrorSimConfig:
         raw = json.load(f)
 
     dataset = DatasetConfig(**raw["dataset"])
+    if dataset.dataset_type == "mkqa" and not dataset.mkqa_path:
+        raise ValueError("dataset.mkqa_path is required for mkqa")
+    if dataset.dataset_type == "global_piqa" and not dataset.hf_name:
+        raise ValueError("dataset.hf_name is required for global_piqa")
+    if dataset.dataset_type == "aya" and not dataset.hf_name:
+        raise ValueError("dataset.hf_name is required for aya")
     corruption = CorruptionConfig(**raw.get("corruption", {}))
     generation = GenerationConfig(**raw.get("generation", {}))
     outputs = OutputConfig(**raw.get("outputs", {}))
@@ -74,6 +84,7 @@ def load_config(path: str) -> ErrorSimConfig:
     models_raw = raw.get("models", {})
     reasoner_raw = models_raw.get("reasoner_en") or models_raw.get("REASONER_EN")
     mt2_raw = models_raw.get("mt2") or models_raw.get("MT2")
+    mt1_raw = models_raw.get("mt1") or models_raw.get("MT1")
     corr_raw = (
         models_raw.get("corruption_llm")
         or models_raw.get("CORRUPTION_LLM")
@@ -87,6 +98,8 @@ def load_config(path: str) -> ErrorSimConfig:
         "reasoner_en": _load_model_config(reasoner_raw),
         "mt2": _load_model_config(mt2_raw),
     }
+    if mt1_raw is not None:
+        models["mt1"] = _load_model_config(mt1_raw)
     if corr_raw is not None:
         models["corruption_llm"] = _load_model_config(corr_raw)
 

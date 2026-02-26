@@ -1,0 +1,73 @@
+{
+  "run_name": "mkqa_error_prop_gpt",
+  "dataset": {
+    "dataset_type": "mkqa",
+    "mkqa_path": "src/evaluation/error_prop/ml-mkqa/dataset/mkqa.jsonl.gz",
+    "langs": [
+      "zh_cn",
+      "ar",
+      "vi",
+      "ja"
+    ],
+    "max_examples": 500,
+    "seed": 42
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "mt1": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "corruption_llm": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "mt2": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    }
+  },
+  "corruption": {
+    "num_variants_per_error": 1,
+    "omission_max_words": 2,
+    "require_all_errors": true,
+    "max_output_variants_per_type": 6,
+    "input_jsonl": "results/error_prop_gpt/mkqa/mkqa_gpt_corruptions.jsonl",
+    "output_jsonl": "results/error_prop_gpt/mkqa/mkqa_gpt_corruptions.jsonl"
+  },
+  "generation": {
+    "mt1_max_new_tokens": 256,
+    "mt1_temperature": 0.0,
+    "mt1_top_p": 1.0,
+    "mt2_max_new_tokens": 256,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0,
+    "corruption_max_new_tokens": 256,
+    "corruption_temperature": 0.3,
+    "corruption_top_p": 0.9
+  },
+  "outputs": {
+    "predictions_dir": "results/error_prop_gpt/mkqa/preds",
+    "metrics_dir": "results/error_prop_gpt/mkqa/metrics",
+    "logs_dir": "logs"
+  }
+}

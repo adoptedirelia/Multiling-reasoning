@@ -9,14 +9,10 @@ def _extract_tag_tolerant(text: str, tag: str) -> str:
     if not t:
         return ""
 
-    # 1) Strict well-formed tag extraction; keep last occurrence.
-    strict = re.findall(
-        rf"<{tag}>(.*?)</{tag}>", t, re.DOTALL | re.IGNORECASE
-    )
+    strict = re.findall(rf"<{tag}>(.*?)</{tag}>", t, re.DOTALL | re.IGNORECASE)
     if strict:
         return strict[-1].strip()
 
-    # 2) Tolerate missing closing tag by taking content until next tag/end.
     open_pat = re.compile(rf"<{tag}>", re.IGNORECASE)
     starts = list(open_pat.finditer(t))
     if starts:
@@ -36,7 +32,6 @@ def _best_effort_line(text: str) -> str:
     lines = [ln.strip() for ln in t.splitlines() if ln.strip()]
     if not lines:
         return ""
-    # Prefer the first line that does not look like prompt scaffolding.
     bad = ("output:", "input:", "note:", "explanation:", "translation:")
     for ln in lines:
         low = ln.lower()
@@ -52,7 +47,6 @@ def extract_answer(text: str) -> str:
     tagged = _extract_tag_tolerant(text, "answer")
     if tagged:
         return tagged
-    # Less strict fallback: recover a usable single line if tags are malformed.
     line = _best_effort_line(text)
     return line if line else (text or "").strip()
 

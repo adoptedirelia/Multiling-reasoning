@@ -1,3 +1,4 @@
+import gc
 from typing import List, Optional
 
 from vllm import LLM, SamplingParams
@@ -97,3 +98,33 @@ class LlamaEngine(BaseEngine):
         )
         outputs = self.model.generate(prompts, sampling_params=sampling_params)
         return [output.outputs[0].text.strip("\n") for output in outputs]
+
+    def shutdown(self):
+        model = self.model
+        try:
+            if model is not None:
+                llm_engine = getattr(model, "llm_engine", None)
+                if llm_engine is not None:
+                    shutdown = getattr(llm_engine, "shutdown", None)
+                    if callable(shutdown):
+                        shutdown()
+                close = getattr(model, "close", None)
+                if callable(close):
+                    close()
+        except Exception:
+            pass
+        finally:
+            self.model = None
+            self.tokenizer = None
+
+        try:
+            import torch
+
+            if torch.distributed.is_available() and torch.distributed.is_initialized():
+                torch.distributed.destroy_process_group()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
+
+        gc.collect()

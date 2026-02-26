@@ -1,15 +1,15 @@
 import re
-from typing import List, Dict
+from typing import Dict, List
 
 from src.eval.engine import BaseEngine
 
 from .prompts import (
-    reasoner_prompt,
+    input_corruption_prompt,
+    mt1_translate_prompt,
     mt2_context_prompt,
     mt2_standard_prompt,
-    input_corruption_prompt,
     output_corruption_prompt,
-    mt1_translate_prompt,
+    reasoner_prompt,
 )
 from .text_utils import extract_answer, extract_reasoning, extract_tag
 
@@ -32,16 +32,9 @@ class ENReasoner:
             reasoning = extract_reasoning(body)
             answer = extract_answer(body)
             if _invalid_reasoner_pair(reasoning, answer):
-                # No retry path: sanitize deterministically.
                 answer = _sanitize_answer_fallback(answer, questions_en[i])
                 reasoning = ""
-            out.append(
-                {
-                    "raw": raw,
-                    "reasoning": reasoning,
-                    "answer": answer,
-                }
-            )
+            out.append({"raw": raw, "reasoning": reasoning, "answer": answer})
         return out
 
 
@@ -104,7 +97,6 @@ class MT1Translator:
         )
         cleaned = []
         for i, raw in enumerate(outputs):
-            # Parse from full raw output first: check all <answer> blocks from last to first.
             answer_blocks = _extract_tag_all(raw, "answer")
             chosen = ""
             for cand in reversed(answer_blocks):
@@ -112,161 +104,12 @@ class MT1Translator:
                 if not _invalid_translation_text(cand):
                     chosen = cand
                     break
-
             if not chosen:
-                # If no valid tagged answer exists, fallback to completion text (raw - prompt).
                 body = _strip_prompt_echo(raw, prompts[i]).strip()
                 fallback = _clean_mt1_text(body)
                 chosen = fallback if fallback else ""
-
             cleaned.append(chosen)
         return cleaned
-
-
-def _invalid_llm_text(text: str) -> bool:
-    if not text:
-        return True
-    lowered = text.lower()
-    if "```" in text:
-        return True
-    if "<question>" in lowered or "<think>" in lowered or "<answer>" in lowered:
-        return True
-    if "explanation:" in lowered or "note:" in lowered:
-        return True
-    return False
-
-
-def _strip_prompt_echo(raw: str, prompt: str) -> str:
-    r = (raw or "")
-    p = (prompt or "")
-    if not p:
-        return r
-    # Exact prefix echo.
-    if r.startswith(p):
-        return r[len(p) :].lstrip()
-    # Sometimes engines prepend whitespace/newlines before the echoed prompt.
-    r_l = r.lstrip()
-    if r_l.startswith(p):
-        return r_l[len(p) :].lstrip()
-    # If prompt appears later in the raw text, keep only content after the last full prompt echo.
-    if p in r:
-        return r.rsplit(p, 1)[-1].lstrip()
-    return r
-
-
-def _invalid_reasoner_pair(reasoning: str, answer: str) -> bool:
-    if not answer:
-        return True
-    lower = answer.lower()
-    if "<think>" in lower or "<question>" in lower or "</answer>" in lower:
-        return True
-    if "```" in answer:
-        return True
-    # If answer still looks like an entire prompt body, treat as invalid.
-    if len(answer) > 400 and "<answer>" not in answer.lower():
-        return True
-    return False
-
-
-def _invalid_translation_text(text: str) -> bool:
-    if not text:
-        return True
-    lower = text.lower()
-    if "<question>" in lower or "<think>" in lower or "<answer>" in lower or "</answer>" in lower:
-        return True
-    if "```" in text:
-        return True
-    if lower.startswith("output:") or lower.startswith("input:"):
-        return True
-    if "translate the following text from" in lower:
-        return True
-    if "translate the following into english" in lower:
-        return True
-    if "translation:" in lower or "explanation:" in lower or "note:" in lower:
-        return True
-    if lower in {"[english translation]", "[corrupted english question]", "...", "{translation}", "[translation only]"}:
-        return True
-    if lower in {"[translation]"}:
-        return True
-    if lower.startswith("[english translation"):
-        return True
-    return False
-
-
-def _extract_before_closing_answer(text: str) -> str:
-    t = (text or "").strip()
-    if not t:
-        return ""
-    idx = t.lower().find("</answer>")
-    if idx == -1:
-        return ""
-    return t[:idx].strip()
-
-
-def _extract_tag_all(text: str, tag: str) -> List[str]:
-    t = (text or "").strip()
-    if not t:
-        return []
-    pattern = rf"<{tag}>(.*?)</{tag}>"
-    return [m.strip() for m in re.findall(pattern, t, re.DOTALL | re.IGNORECASE)]
-
-
-def _clean_mt1_text(text: str) -> str:
-    t = (text or "").replace("```", " ").strip()
-    if not t:
-        return ""
-    # Keep only content before obvious scaffold sections.
-    lower = t.lower()
-    markers = [
-        "\ntranslation:",
-        "\nexplanation:",
-        "\nnote:",
-        "\noutput:",
-        "\ninput:",
-        " translate the following text from",
-    ]
-    cuts = [lower.find(m) for m in markers if lower.find(m) != -1]
-    if cuts:
-        t = t[: min(cuts)].strip()
-    # If answer close tag leaked, keep text before it.
-    close_idx = t.lower().find("</answer>")
-    if close_idx != -1:
-        t = t[:close_idx].strip()
-    lines = [ln.strip() for ln in t.splitlines() if ln.strip()]
-    return lines[0] if lines else ""
-
-
-def _sanitize_answer_fallback(answer: str, question_en: str) -> str:
-    if not answer:
-        return question_en
-    first_line = answer.strip().splitlines()[0].strip()
-    if not first_line:
-        return question_en
-    return first_line
-
-
-def _fallback_shift_intent(x_en: str) -> str:
-    return f"Explain {x_en}"
-
-
-def _fallback_drop_constraints(x_en: str) -> str:
-    return f"Provide a detailed response: {x_en}"
-
-
-def _fallback_output_corruption(x_en: str, r_en: str, y_en: str, corruption_type: str) -> Dict[str, str]:
-    if corruption_type == "contradiction":
-        r_err = f"{r_en} Historical records indicate a different factual outcome."
-        y_err = "The accepted factual answer is different from this claim."
-        return {"r_en_err": r_err, "y_en_err": y_err}
-    if corruption_type == "invented":
-        r_err = f"{r_en} Independent reports cite the undocumented Meridian Registry as confirmation."
-        y_err = "According to the Meridian Registry, this is the confirmed answer."
-        return {"r_en_err": r_err, "y_en_err": y_err}
-    if corruption_type == "subjective":
-        r_err = f"{r_en} In my opinion, the best interpretation is the most inspiring one."
-        y_err = "I think the best answer is the most meaningful one."
-        return {"r_en_err": r_err, "y_en_err": y_err}
-    return {"r_en_err": r_en, "y_en_err": y_en}
 
 
 class LLMInputCorruptor:
@@ -339,3 +182,133 @@ class LLMOutputCorruptor:
             else:
                 out.append({"r_en_err": r_err, "y_en_err": y_err})
         return out
+
+
+def _invalid_llm_text(text: str) -> bool:
+    if not text:
+        return True
+    lowered = text.lower()
+    if "```" in text:
+        return True
+    if "<question>" in lowered or "<think>" in lowered or "<answer>" in lowered:
+        return True
+    if "explanation:" in lowered or "note:" in lowered:
+        return True
+    return False
+
+
+def _strip_prompt_echo(raw: str, prompt: str) -> str:
+    r = (raw or "")
+    p = (prompt or "")
+    if not p:
+        return r
+    if r.startswith(p):
+        return r[len(p) :].lstrip()
+    r_l = r.lstrip()
+    if r_l.startswith(p):
+        return r_l[len(p) :].lstrip()
+    if p in r:
+        return r.rsplit(p, 1)[-1].lstrip()
+    return r
+
+
+def _invalid_reasoner_pair(reasoning: str, answer: str) -> bool:
+    if not answer:
+        return True
+    lower = answer.lower()
+    if "<think>" in lower or "<question>" in lower or "</answer>" in lower:
+        return True
+    if "```" in answer:
+        return True
+    if len(answer) > 400 and "<answer>" not in answer.lower():
+        return True
+    return False
+
+
+def _invalid_translation_text(text: str) -> bool:
+    if not text:
+        return True
+    lower = text.lower()
+    if "<question>" in lower or "<think>" in lower or "<answer>" in lower or "</answer>" in lower:
+        return True
+    if "```" in text:
+        return True
+    if lower.startswith("output:") or lower.startswith("input:"):
+        return True
+    if "translate the following text from" in lower:
+        return True
+    if "translate the following into english" in lower:
+        return True
+    if "translation:" in lower or "explanation:" in lower or "note:" in lower:
+        return True
+    if lower in {"[english translation]", "[corrupted english question]", "...", "{translation}", "[translation only]"}:
+        return True
+    if lower in {"[translation]"}:
+        return True
+    if lower.startswith("[english translation"):
+        return True
+    return False
+
+
+def _extract_tag_all(text: str, tag: str) -> List[str]:
+    t = (text or "").strip()
+    if not t:
+        return []
+    pattern = rf"<{tag}>(.*?)</{tag}>"
+    return [m.strip() for m in re.findall(pattern, t, re.DOTALL | re.IGNORECASE)]
+
+
+def _clean_mt1_text(text: str) -> str:
+    t = (text or "").replace("```", " ").strip()
+    if not t:
+        return ""
+    lower = t.lower()
+    markers = [
+        "\ntranslation:",
+        "\nexplanation:",
+        "\nnote:",
+        "\noutput:",
+        "\ninput:",
+        " translate the following text from",
+    ]
+    cuts = [lower.find(m) for m in markers if lower.find(m) != -1]
+    if cuts:
+        t = t[: min(cuts)].strip()
+    close_idx = t.lower().find("</answer>")
+    if close_idx != -1:
+        t = t[:close_idx].strip()
+    lines = [ln.strip() for ln in t.splitlines() if ln.strip()]
+    return lines[0] if lines else ""
+
+
+def _sanitize_answer_fallback(answer: str, question_en: str) -> str:
+    if not answer:
+        return question_en
+    first_line = answer.strip().splitlines()[0].strip()
+    if not first_line:
+        return question_en
+    return first_line
+
+
+def _fallback_shift_intent(x_en: str) -> str:
+    return f"Explain {x_en}"
+
+
+def _fallback_drop_constraints(x_en: str) -> str:
+    return f"Provide a detailed response: {x_en}"
+
+
+def _fallback_output_corruption(x_en: str, r_en: str, y_en: str, corruption_type: str) -> Dict[str, str]:
+    if corruption_type == "contradiction":
+        r_err = f"{r_en} Historical records indicate a different factual outcome."
+        y_err = "The accepted factual answer is different from this claim."
+        return {"r_en_err": r_err, "y_en_err": y_err}
+    if corruption_type == "invented":
+        r_err = f"{r_en} Independent reports cite the undocumented Meridian Registry as confirmation."
+        y_err = "According to the Meridian Registry, this is the confirmed answer."
+        return {"r_en_err": r_err, "y_en_err": y_err}
+    if corruption_type == "subjective":
+        r_err = f"{r_en} In my opinion, the best interpretation is the most inspiring one."
+        y_err = "I think the best answer is the most meaningful one."
+        return {"r_en_err": r_err, "y_en_err": y_err}
+    return {"r_en_err": r_en, "y_en_err": y_en}
