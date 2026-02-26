@@ -9,6 +9,6 @@ logs/
 ml-mkqa/
 slurm_jobs/
 training_data/
-error-prop
+error_prop
 .env
 .env.local
