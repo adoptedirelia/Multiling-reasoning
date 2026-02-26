@@ -1,0 +1,86 @@
+{
+  "run_name": "global_piqa_error_prop_gpt",
+  "dataset": {
+    "dataset_type": "global_piqa",
+    "langs": [
+      "zh_cn",
+      "ar",
+      "ja",
+      "vi",
+      "te",
+      "mr",
+      "am"
+    ],
+    "max_examples": 1000,
+    "seed": 42,
+    "hf_name": "mrlbenchmarks/global-piqa-nonparallel",
+    "hf_split": "test",
+    "hf_configs": {
+      "zh_cn": "cmn_hans",
+      "ar": "arb_arab",
+      "ja": "jpn_jpan",
+      "vi": "vie_latn",
+      "te": "tel_telu",
+      "mr": "mar_deva",
+      "am": "amh_ethi"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "mt1": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "corruption_llm": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "mt2": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    }
+  },
+  "corruption": {
+    "num_variants_per_error": 1,
+    "omission_max_words": 2,
+    "require_all_errors": true,
+    "max_output_variants_per_type": 6,
+    "input_jsonl": "results/error_prop_gpt/global_piqa/global_piqa_gpt_corruptions.jsonl",
+    "output_jsonl": "results/error_prop_gpt/global_piqa/global_piqa_gpt_corruptions.jsonl"
+  },
+  "generation": {
+    "mt1_max_new_tokens": 256,
+    "mt1_temperature": 0.0,
+    "mt1_top_p": 1.0,
+    "mt2_max_new_tokens": 256,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0,
+    "corruption_max_new_tokens": 256,
+    "corruption_temperature": 0.3,
+    "corruption_top_p": 0.9
+  },
+  "outputs": {
+    "predictions_dir": "results/error_prop_gpt/global_piqa/preds",
+    "metrics_dir": "results/error_prop_gpt/global_piqa/metrics",
+    "logs_dir": "logs"
+  }
+}

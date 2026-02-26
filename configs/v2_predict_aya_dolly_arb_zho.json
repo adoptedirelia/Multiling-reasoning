@@ -1,0 +1,44 @@
+{
+  "run_name": "v2_predict_aya_dolly_arb",
+  "dataset": {
+    "dataset_type": "aya",
+    "langs": ["arb"],
+    "max_examples": 24000,
+    "seed": 42,
+    "hf_name": "CohereLabs/aya_evaluation_suite",
+    "hf_split": "test",
+    "hf_configs": {
+      "arb": "dolly_machine_translated"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    },
+    "mt2": {
+      "model_type": "openai",
+      "model_name": "gpt-4.1-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 120
+      }
+    }
+  },
+  "corruption": {
+    "input_jsonl": "results/error_prop_gpt/aya_dolly/aya_dolly_gpt_corruptions.jsonl"
+  },
+  "cascade": {
+    "modes": ["standard", "context"]
+  },
+  "outputs": {
+    "corruption_jsonl": "results/error_prop_gpt/aya_dolly/aya_dolly_gpt_corruptions.jsonl",
+    "predictions_jsonl": "results/error_prop_gpt/aya_dolly/preds/_intermediate/aya_dolly_error_prop_gpt",
+    "metrics_json": "results/v2/winrate/aya_dolly_arb_metrics_unused.json",
+    "logs_dir": "logs"
+  }
+}

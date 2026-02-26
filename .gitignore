@@ -1,4 +1,4 @@
-dj_test/
+90dj_test/
 __pycache__/
 dataset/
 results/
@@ -9,3 +9,6 @@ logs/
 ml-mkqa/
 slurm_jobs/
 training_data/
+error_prop
+.env
+.env.local

@@ -1,8 +1,0 @@
-{
-  "constraints": [
-    {
-      "id": "answer_then_brief_justification",
-      "text": "Put the answer on the first line. Put a brief justification on the second line."
-    }
-  ]
-}

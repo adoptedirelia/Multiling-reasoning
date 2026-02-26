@@ -1,0 +1,82 @@
+{
+  "run_name": "global_piqa_error_prop",
+  "dataset": {
+    "dataset_type": "global_piqa",
+    "langs": [
+      "zh_cn",
+      "ar",
+      "ja",
+      "vi",
+      "te",
+      "mr",
+      "am"
+    ],
+    "max_examples": 1000,
+    "seed": 42,
+    "hf_name": "mrlbenchmarks/global-piqa-nonparallel",
+    "hf_split": "test",
+    "hf_configs": {
+      "zh_cn": "cmn_hans",
+      "ar": "arb_arab",
+      "ja": "jpn_jpan",
+      "vi": "vie_latn",
+      "te": "tel_telu",
+      "mr": "mar_deva",
+      "am": "amh_ethi"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    },
+    "mt1": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    },
+    "corruption_llm": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    },
+    "mt2": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    }
+  },
+  "corruption": {
+    "num_variants_per_error": 1,
+    "omission_max_words": 2,
+    "require_all_errors": true,
+    "max_output_variants_per_type": 6,
+    "input_jsonl": "results/error_prop/global_piqa/corruptions.jsonl",
+    "output_jsonl": "results/error_prop/global_piqa/corruptions.jsonl"
+  },
+  "generation": {
+    "mt1_max_new_tokens": 256,
+    "mt1_temperature": 0.0,
+    "mt1_top_p": 1.0,
+    "mt2_max_new_tokens": 256,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0,
+    "corruption_max_new_tokens": 256,
+    "corruption_temperature": 0.3,
+    "corruption_top_p": 0.9
+  },
+  "outputs": {
+    "predictions_dir": "results/error_prop/global_piqa/preds",
+    "metrics_dir": "results/error_prop/global_piqa/metrics",
+    "logs_dir": "logs"
+  }
+}

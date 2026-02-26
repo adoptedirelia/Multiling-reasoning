@@ -1,0 +1,32 @@
+{
+  "run_name": "mkqa_direct_eval",
+  "dataset": {
+    "dataset_type": "mkqa",
+    "mkqa_path": "src/evaluation/error_prop/ml-mkqa/dataset/mkqa.jsonl.gz",
+    "langs": [
+      "zh_cn",
+      "ar",
+      "vi",
+      "ja"
+    ],
+    "max_examples": 500,
+    "seed": 42
+  },
+  "model": {
+    "model_type": "qwen3",
+    "model_name": "Qwen/Qwen2.5-7B-Instruct",
+    "device_map": "auto",
+    "torch_dtype": "auto",
+    "attn_implementation": "flash_attention_2"
+  },
+  "generation": {
+    "mt2_max_new_tokens": 256,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0
+  },
+  "outputs": {
+    "predictions_dir": "results/direct_eval_mkqa/preds",
+    "metrics_dir": "results/direct_eval_mkqa/metrics",
+    "logs_dir": "logs"
+  }
+}

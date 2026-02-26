@@ -1,0 +1,69 @@
+{
+  "run_name": "mkqa_error_prop",
+  "dataset": {
+    "dataset_type": "mkqa",
+    "mkqa_path": "src/evaluation/error_prop/ml-mkqa/dataset/mkqa.jsonl.gz",
+    "langs": [
+      "zh_cn",
+      "ar",
+      "vi",
+      "ja"
+    ],
+    "max_examples": 500,
+    "seed": 42
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    },
+    "mt1": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    },
+    "corruption_llm": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    },
+    "mt2": {
+      "model_type": "qwen3",
+      "model_name": "Qwen/Qwen2.5-7B-Instruct",
+      "device_map": "auto",
+      "torch_dtype": "auto",
+      "attn_implementation": "flash_attention_2"
+    }
+  },
+  "corruption": {
+    "num_variants_per_error": 1,
+    "omission_max_words": 2,
+    "require_all_errors": true,
+    "max_output_variants_per_type": 6,
+    "input_jsonl": "results/error_prop/mkqa/corruptions.jsonl",
+    "output_jsonl": "results/error_prop/mkqa/corruptions.jsonl"
+  },
+  "generation": {
+    "mt1_max_new_tokens": 256,
+    "mt1_temperature": 0.0,
+    "mt1_top_p": 1.0,
+    "mt2_max_new_tokens": 256,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0,
+    "corruption_max_new_tokens": 256,
+    "corruption_temperature": 0.3,
+    "corruption_top_p": 0.9
+  },
+  "outputs": {
+    "predictions_dir": "results/error_prop/mkqa/preds",
+    "metrics_dir": "results/error_prop/mkqa/metrics",
+    "logs_dir": "logs"
+  }
+}
