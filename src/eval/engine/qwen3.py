@@ -28,6 +28,7 @@ class Qwen3Engine(BaseEngine):
         # vLLM-specific options (can be passed via **kwargs)
         self.tensor_parallel_size = kwargs.pop("tensor_parallel_size", 1)
         self.llm_kwargs = kwargs
+        self.tensor_parallel_size = 1
     
     def load_model(self):
         """Load Qwen3 model via vLLM."""

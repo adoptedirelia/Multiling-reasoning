@@ -5,8 +5,8 @@ from typing import Optional, Dict, Any
 @dataclass
 class ModelConfig:
     """Model configuration"""
-    model_type: str  # "qwen3" or "deepseek"
-    model_name: str  # Model name or path
+    model_type: str  # "qwen3", "openai", etc.
+    model_name: str  # Model name or path (e.g. "gpt-4o" for OpenAI)
     device_map: str = "auto"
     torch_dtype: str = "auto"
     attn_implementation: Optional[str] = "flash_attention_2"  # Only for qwen3
@@ -14,6 +14,10 @@ class ModelConfig:
     temperature: float = 0.7
     top_p: float = 0.9
     lora_path: str = None
+    # OpenAI-compatible API settings
+    api_key_env: str = "OPENAI_API_KEY"
+    base_url: str = "https://api.openai.com/v1/chat/completions"
+    timeout_s: int = 60
 
 
 @dataclass
@@ -41,6 +45,9 @@ class EvalConfig:
     
     # Baseline type: "end_to_end", "cascade", "prompting", or "mt1_mt2" (default pipeline)
     baseline_type: str = "mt1_mt2"
+    
+    # Question type: "auto" (detect from data), "open_ended", or "mc" (multiple choice)
+    question_type: str = "auto"
     
     # Other configuration
     batch_size: int = 1

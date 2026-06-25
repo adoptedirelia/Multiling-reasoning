@@ -54,6 +54,7 @@ Required Format:
 [Final answer in {language} goes here]
 </answer>
 
+Input: {English_Answer}
 Output:
 """
 
@@ -90,5 +91,113 @@ Required Format:
 </answer>
 
 Input: {question}
+Output:
+"""
+
+MATH_REASONING_PROMPT = """
+You are an advanced mathematics reasoning assistant. You will be provided with a math problem. Your task is to solve it step-by-step and present the final answer.
+
+Instructions:
+1.  Reasoning Process: Solve the problem step-by-step in English, showing all calculations and logical deductions. Enclose this entire process within <think> tags.
+2.  Final Answer: Place only the final answer inside \\boxed{{}} immediately after the closing </think> tag.
+
+Required Format:
+<think>
+[Detailed step-by-step solution in English goes here]
+</think>
+\\boxed{{[Final answer]}}
+
+Input: {question}
+Output:
+"""
+
+MATH_MT2_BASE_PROMPT = """
+You are an advanced translation assistant. A math problem has been solved in English and the final answer is given below. Present this answer in {language}.
+
+Required Format:
+<answer>
+\\boxed{{[Final answer]}}
+</answer>
+
+English Answer: {English_Answer}
+Output:
+"""
+
+MATH_MT2_PROMPT = """
+You are an advanced mathematics reasoning assistant. You will be provided with a math problem in {language}, along with its English translation and full English solution. Present the final answer in {language}.
+
+Required Format:
+<answer>
+\\boxed{{[Final answer]}}
+</answer>
+
+Input: {question}
+English Question: {English_Question}
+English Thinking Process: {English_Thinking_Process}
+English Answer: {English_Answer}
+
+Output:
+"""
+
+MATH_END_TO_END_PROMPT = """
+You are an advanced mathematics reasoning assistant. You will be provided with a math problem in {language}. Your task is to solve it step-by-step and present the final answer.
+
+Instructions:
+1.  Reasoning Process: Solve the problem step-by-step in {language}, showing all calculations and logical deductions. Enclose this entire process within <think> tags.
+2.  Final Answer: Place only the final answer inside \\boxed{{}} immediately after the closing </think> tag.
+
+Required Format:
+<think>
+[Detailed step-by-step solution in {language} goes here]
+</think>
+\\boxed{{[Final answer]}}
+
+Input: {question}
+Output:
+"""
+
+# ---------------------------------------------------------------------------
+# Ablation study prompts (MT2 step variations for the prompting pipeline)
+# ---------------------------------------------------------------------------
+
+ABLATION_ORIG_Q_PROMPT = """
+You are an advanced reasoning assistant. You will be provided with a question in {language} and the English answer. You need to answer the question in {language}.
+
+Required Format:
+<answer>
+[Final answer in {language} goes here]
+</answer>
+
+Input: {question}
+English Answer: {English_Answer}
+
+Output:
+"""
+
+ABLATION_ENG_Q_PROMPT = """
+You are an advanced reasoning assistant. You will be provided with the English question and the English answer. You need to provide the answer in {language}.
+
+Required Format:
+<answer>
+[Final answer in {language} goes here]
+</answer>
+
+English Question: {English_Question}
+English Answer: {English_Answer}
+
+Output:
+"""
+
+ABLATION_REASONING_PROMPT = """
+You are an advanced reasoning assistant. You will be provided with the English thinking process and the English answer to a question. You need to provide the answer in {language}.
+
+Required Format:
+<answer>
+[Final answer in {language} goes here]
+</answer>
+
+English Thinking Process: {English_Thinking_Process}
+English Answer: {English_Answer}
+
 Output:
 """
