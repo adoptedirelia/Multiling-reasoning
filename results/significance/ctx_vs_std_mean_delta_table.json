@@ -1,0 +1,92 @@
+[
+  {
+    "dataset_key": "aya",
+    "dataset": "Aya",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": 4.7,
+    "mistral": 2.28,
+    "gpt": 0.87
+  },
+  {
+    "dataset_key": "blend",
+    "dataset": "BLEnD",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": 2.67,
+    "mistral": 0.78,
+    "gpt": 0.0
+  },
+  {
+    "dataset_key": "global_piqa",
+    "dataset": "Global-PIQA-OE",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": 2.32,
+    "mistral": 1.68,
+    "gpt": 0.58
+  },
+  {
+    "dataset_key": "mkqa",
+    "dataset": "MKQA",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": 1.26,
+    "mistral": 0.8,
+    "gpt": 1.67
+  },
+  {
+    "dataset_key": "mmlu",
+    "dataset": "Global MMLU",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": 2.36,
+    "mistral": 5.78,
+    "gpt": -0.56
+  },
+  {
+    "dataset_key": "belebele",
+    "dataset": "Belebele",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": 1.29,
+    "mistral": 1.32,
+    "gpt": 4.74
+  },
+  {
+    "dataset_key": "global-piqa-mc",
+    "dataset": "PIQA",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": 0.64,
+    "mistral": 7.39,
+    "gpt": -3.74
+  },
+  {
+    "dataset_key": "mcsqa",
+    "dataset": "MCSQA",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": 0.5,
+    "mistral": 2.0,
+    "gpt": -0.41
+  },
+  {
+    "dataset_key": "mgsm",
+    "dataset": "MGSM",
+    "task_group": "math",
+    "metric": "accuracy",
+    "llama": 9.37,
+    "mistral": -1.27,
+    "gpt": -0.91
+  },
+  {
+    "dataset_key": "mmath",
+    "dataset": "MMath",
+    "task_group": "math",
+    "metric": "accuracy",
+    "llama": 2.7,
+    "mistral": 0.3,
+    "gpt": 0.0
+  }
+]

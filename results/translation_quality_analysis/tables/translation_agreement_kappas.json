@@ -1,0 +1,37 @@
+{
+  "annotation_source": "/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning/results/translation_quality_analysis/tables/full_105_human_llm_annotations.json",
+  "n_items": 105,
+  "label_space": [
+    "OK",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5"
+  ],
+  "pairwise": {
+    "human1_vs_human2": {
+      "rater_a": "human1",
+      "rater_b": "human2",
+      "cohen_kappa": 0.718
+    },
+    "human1_vs_llm": {
+      "rater_a": "human1",
+      "rater_b": "GPT-5.4-mini",
+      "cohen_kappa": 0.683
+    },
+    "human2_vs_llm": {
+      "rater_a": "human2",
+      "rater_b": "GPT-5.4-mini",
+      "cohen_kappa": 0.771
+    }
+  },
+  "three_way": {
+    "raters": [
+      "human1",
+      "human2",
+      "GPT-5.4-mini"
+    ],
+    "fleiss_kappa": 0.724
+  }
+}

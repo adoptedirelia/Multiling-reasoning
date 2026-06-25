@@ -1,0 +1,18 @@
+\begin{table*}[h]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lllccccccccc}
+\toprule
+ & & & \multicolumn{3}{c}{\textbf{Llama-3.1-8B-Instruct}} & \multicolumn{3}{c}{\textbf{Mistral-7B-Instruct-v0.3}} & \multicolumn{3}{c}{\textbf{GPT-4o-mini}}  \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-9}\cmidrule(lr){10-12}
+\textbf{Dataset} & \textbf{Task type} & \textbf{Metric} & \cstd & \etoe & \cctx & \cstd & \etoe & \cctx & \cstd & \etoe & \cctx \\
+\midrule
+Aya & Open-ended cultural & chrF & 9.56 & 11.27 & \textbf{14.26} & 9.71 & \textbf{12.60} & 11.99 & 14.65 & \textbf{15.96} & 15.52 \\
+BLEnD & Open-ended cultural & chrF & 9.47 & 11.91 & \textbf{12.14} & 8.27 & 7.14 & \textbf{9.05} & 17.26 & \textbf{22.10} & 17.26 \\
+Global-PIQA-OE & Open-ended cultural & chrF & 11.99 & 12.46 & \textbf{14.31} & 12.90 & 12.32 & \textbf{14.58} & 18.15 & 15.41 & \textbf{18.73} \\
+MKQA & Open-ended factual & chrF & 13.36 & 11.51 & \textbf{14.62} & 11.29 & 10.17 & \textbf{12.09} & 26.25 & 23.03 & \textbf{27.92} \\
+\bottomrule
+\end{tabular}
+\caption{Macro-average performance over languages on open-ended datasets.}
+\end{table*}

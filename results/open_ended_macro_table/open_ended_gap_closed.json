@@ -1,0 +1,74 @@
+[
+  {
+    "dataset_key": "aya",
+    "dataset": "Aya",
+    "metric": "chrF",
+    "gpt_standard": 14.65,
+    "models": {
+      "llama": {
+        "context": 14.26,
+        "gap_closed_fraction": 0.9233791748526522,
+        "gap_closed_percent": 92
+      },
+      "mistral": {
+        "context": 11.99,
+        "gap_closed_fraction": 0.46153846153846145,
+        "gap_closed_percent": 46
+      }
+    }
+  },
+  {
+    "dataset_key": "global_piqa",
+    "dataset": "Global-PIQA-OE",
+    "metric": "chrF",
+    "gpt_standard": 18.15,
+    "models": {
+      "llama": {
+        "context": 14.31,
+        "gap_closed_fraction": 0.37662337662337675,
+        "gap_closed_percent": 38
+      },
+      "mistral": {
+        "context": 14.58,
+        "gap_closed_fraction": 0.32000000000000006,
+        "gap_closed_percent": 32
+      }
+    }
+  },
+  {
+    "dataset_key": "blend",
+    "dataset": "BLEnD",
+    "metric": "chrF",
+    "gpt_standard": 17.26,
+    "models": {
+      "llama": {
+        "context": 12.14,
+        "gap_closed_fraction": 0.34274711168164307,
+        "gap_closed_percent": 34
+      },
+      "mistral": {
+        "context": 9.05,
+        "gap_closed_fraction": 0.08676307007786441,
+        "gap_closed_percent": 9
+      }
+    }
+  },
+  {
+    "dataset_key": "mkqa",
+    "dataset": "MKQA",
+    "metric": "chrF",
+    "gpt_standard": 26.25,
+    "models": {
+      "llama": {
+        "context": 14.62,
+        "gap_closed_fraction": 0.0977501939487975,
+        "gap_closed_percent": 10
+      },
+      "mistral": {
+        "context": 12.09,
+        "gap_closed_fraction": 0.05347593582887705,
+        "gap_closed_percent": 5
+      }
+    }
+  }
+]

@@ -1,0 +1,106 @@
+[
+  {
+    "dataset_key": "aya",
+    "dataset": "Aya",
+    "task_type": "Open-ended cultural",
+    "metric": "chrf",
+    "models": {
+      "llama": {
+        "model_label": "Llama-3.1-8B-Instruct",
+        "standard": 9.56,
+        "end_to_end": 11.27,
+        "context": 14.26
+      },
+      "mistral": {
+        "model_label": "Mistral-7B-Instruct-v0.3",
+        "standard": 9.71,
+        "end_to_end": 12.6,
+        "context": 11.99
+      },
+      "gpt": {
+        "model_label": "GPT-4o-mini",
+        "standard": 14.65,
+        "end_to_end": 15.96,
+        "context": 15.52
+      }
+    }
+  },
+  {
+    "dataset_key": "blend",
+    "dataset": "BLEnD",
+    "task_type": "Open-ended cultural",
+    "metric": "chrf",
+    "models": {
+      "llama": {
+        "model_label": "Llama-3.1-8B-Instruct",
+        "standard": 9.47,
+        "end_to_end": 11.91,
+        "context": 12.14
+      },
+      "mistral": {
+        "model_label": "Mistral-7B-Instruct-v0.3",
+        "standard": 8.27,
+        "end_to_end": 7.14,
+        "context": 9.05
+      },
+      "gpt": {
+        "model_label": "GPT-4o-mini",
+        "standard": 17.26,
+        "end_to_end": 22.1,
+        "context": 17.26
+      }
+    }
+  },
+  {
+    "dataset_key": "global_piqa",
+    "dataset": "Global-PIQA-OE",
+    "task_type": "Open-ended cultural",
+    "metric": "chrf",
+    "models": {
+      "llama": {
+        "model_label": "Llama-3.1-8B-Instruct",
+        "standard": 11.99,
+        "end_to_end": 12.46,
+        "context": 14.31
+      },
+      "mistral": {
+        "model_label": "Mistral-7B-Instruct-v0.3",
+        "standard": 12.9,
+        "end_to_end": 12.32,
+        "context": 14.58
+      },
+      "gpt": {
+        "model_label": "GPT-4o-mini",
+        "standard": 18.15,
+        "end_to_end": 15.41,
+        "context": 18.73
+      }
+    }
+  },
+  {
+    "dataset_key": "mkqa",
+    "dataset": "MKQA",
+    "task_type": "Open-ended factual",
+    "metric": "chrf",
+    "models": {
+      "llama": {
+        "model_label": "Llama-3.1-8B-Instruct",
+        "standard": 13.36,
+        "end_to_end": 11.51,
+        "context": 14.62
+      },
+      "mistral": {
+        "model_label": "Mistral-7B-Instruct-v0.3",
+        "standard": 11.29,
+        "end_to_end": 10.17,
+        "context": 12.09
+      },
+      "gpt": {
+        "model_label": "GPT-4o-mini",
+        "standard": 26.25,
+        "end_to_end": 23.03,
+        "context": 27.92
+      }
+    }
+  }
+]

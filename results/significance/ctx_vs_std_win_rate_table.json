@@ -1,0 +1,102 @@
+[
+  {
+    "dataset_key": "aya",
+    "dataset": "Aya",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "n_languages": 6,
+    "llama": 100.0,
+    "mistral": 83.3,
+    "gpt": 83.3
+  },
+  {
+    "dataset_key": "blend",
+    "dataset": "BLEnD",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "n_languages": 14,
+    "llama": 100.0,
+    "mistral": 85.7,
+    "gpt": 42.9
+  },
+  {
+    "dataset_key": "global_piqa",
+    "dataset": "Global-PIQA-OE",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "n_languages": 116,
+    "llama": 88.8,
+    "mistral": 86.2,
+    "gpt": 70.4
+  },
+  {
+    "dataset_key": "mkqa",
+    "dataset": "MKQA",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "n_languages": 25,
+    "llama": 92.0,
+    "mistral": 100.0,
+    "gpt": 88.0
+  },
+  {
+    "dataset_key": "mmlu",
+    "dataset": "Global MMLU",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "n_languages": 42,
+    "llama": 84.6,
+    "mistral": 100.0,
+    "gpt": 20.0
+  },
+  {
+    "dataset_key": "belebele",
+    "dataset": "Belebele",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "n_languages": 121,
+    "llama": 78.3,
+    "mistral": 66.3,
+    "gpt": 89.9
+  },
+  {
+    "dataset_key": "global-piqa-mc",
+    "dataset": "PIQA",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "n_languages": 116,
+    "llama": 65.2,
+    "mistral": 92.5,
+    "gpt": 7.1
+  },
+  {
+    "dataset_key": "mcsqa",
+    "dataset": "MCSQA",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "n_languages": 8,
+    "llama": 66.7,
+    "mistral": 62.5,
+    "gpt": 33.3
+  },
+  {
+    "dataset_key": "mgsm",
+    "dataset": "MGSM",
+    "task_group": "math",
+    "metric": "accuracy",
+    "n_languages": 11,
+    "llama": 100.0,
+    "mistral": 0.0,
+    "gpt": 0.0
+  },
+  {
+    "dataset_key": "mmath",
+    "dataset": "MMath",
+    "task_group": "math",
+    "metric": "accuracy",
+    "n_languages": 10,
+    "llama": 100.0,
+    "mistral": 75.0,
+    "gpt": null
+  }
+]

@@ -1,0 +1,242 @@
+[
+  {
+    "dataset_key": "aya",
+    "dataset": "Aya",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.0390625,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 0.078125,
+      "direction": "positive",
+      "significant": false
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 0.1125,
+      "direction": "positive",
+      "significant": false
+    }
+  },
+  {
+    "dataset_key": "blend",
+    "dataset": "BLEnD",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.00030517578125,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 0.001708984375,
+      "direction": "positive",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 0.80419921875,
+      "direction": "positive",
+      "significant": false
+    }
+  },
+  {
+    "dataset_key": "global_piqa",
+    "dataset": "Global-PIQA-OE",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 6.617091310373934e-15,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 6.324171563496334e-15,
+      "direction": "positive",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 0.00033872193787820695,
+      "direction": "positive",
+      "significant": true
+    }
+  },
+  {
+    "dataset_key": "mkqa",
+    "dataset": "MKQA",
+    "task_group": "open_ended",
+    "metric": "chrf",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.00010649363199869792,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 4.549346553696586e-05,
+      "direction": "positive",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 0.002598389983177185,
+      "direction": "positive",
+      "significant": true
+    }
+  },
+  {
+    "dataset_key": "mmlu",
+    "dataset": "Global MMLU",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 2.4012259523151402e-05,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 7.611642520448693e-08,
+      "direction": "positive",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 0.1171875,
+      "direction": "negative",
+      "significant": false
+    }
+  },
+  {
+    "dataset_key": "belebele",
+    "dataset": "Belebele",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.0007664834268159529,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 0.0044504159839365886,
+      "direction": "positive",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 3.524040378365391e-11,
+      "direction": "positive",
+      "significant": true
+    }
+  },
+  {
+    "dataset_key": "global-piqa-mc",
+    "dataset": "PIQA",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.04805138498627794,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 2.877583613810598e-14,
+      "direction": "positive",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 5.994244669747867e-09,
+      "direction": "negative",
+      "significant": true
+    }
+  },
+  {
+    "dataset_key": "mcsqa",
+    "dataset": "MCSQA",
+    "task_group": "multiple_choice",
+    "metric": "accuracy",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.34375,
+      "direction": "positive",
+      "significant": false
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 0.11284722222222222,
+      "direction": "positive",
+      "significant": false
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 1.0,
+      "direction": "negative",
+      "significant": false
+    }
+  },
+  {
+    "dataset_key": "mgsm",
+    "dataset": "MGSM",
+    "task_group": "math",
+    "metric": "accuracy",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.0016276041666666667,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 0.022321428571428572,
+      "direction": "negative",
+      "significant": true
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": 0.6428571428571429,
+      "direction": "negative",
+      "significant": false
+    }
+  },
+  {
+    "dataset_key": "mmath",
+    "dataset": "MMath",
+    "task_group": "math",
+    "metric": "accuracy",
+    "llama": {
+      "model_label": "Llama-3.1-8B-Instruct",
+      "q_value": 0.005580357142857143,
+      "direction": "positive",
+      "significant": true
+    },
+    "mistral": {
+      "model_label": "Mistral-7B-Instruct-v0.3",
+      "q_value": 0.5,
+      "direction": "positive",
+      "significant": false
+    },
+    "gpt": {
+      "model_label": "GPT-4o-mini",
+      "q_value": null,
+      "direction": "neutral",
+      "significant": false
+    }
+  }
+]

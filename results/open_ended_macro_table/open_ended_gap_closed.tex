@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l c c c c}
+\toprule
+& \multicolumn{2}{c}{\textbf{Llama-3.1-8B-Instruct}} & \multicolumn{2}{c}{\textbf{Mistral-7B-Instruct-v0.3}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+\textbf{Dataset} & \cctx & gap closed & \cctx & gap closed \\
+\midrule
+Aya & $14.26$ & \cellcolor{posstrong}\textbf{92\%} & $11.99$ & \cellcolor{posmid}46\% \\
+Global-PIQA-OE & $14.31$ & \cellcolor{posmid}38\% & $14.58$ & \cellcolor{posweak}32\% \\
+BLEnD & $12.14$ & \cellcolor{posweak}34\% & $9.05$ & \cellcolor{posweak}9\% \\
+MKQA & $14.62$ & \cellcolor{posweak}10\% & $12.09$ & \cellcolor{posweak}5\% \\
+\bottomrule
+\end{tabular}
+\caption{Fraction of the open-model-to-GPT-4o-mini gap closed by the context-aware cascade, on the four open-ended benchmarks. \emph{Gap closed} is $(\text{\cctx} - \text{\cstd})/(\text{GPT-4o-mini}_{\text{std}} - \text{\cstd})$, the share of the standard-cascade gap from the open model to GPT-4o-mini that the context-aware cascade recovers. GPT-4o-mini standard-cascade reference scores: Aya $14.65$, BLEnD $17.26$, Global-PIQA-OE $18.15$, MKQA $26.25$ (chrF).}
+\end{table}

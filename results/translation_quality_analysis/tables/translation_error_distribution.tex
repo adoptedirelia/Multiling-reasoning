@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Model & \textsc{OK} & \textsc{Struct.} & \textsc{Entity} & \textsc{Event} & \textsc{Cultural} & \textsc{Halluc.} \\
+\midrule
+GPT-4o-mini & 65.05 & 20.78 & 0.87 & 7.52 & 1.12 & 4.66 \\
+Llama-3.1-8B-Instruct & 40.00 & 23.33 & 2.94 & 16.72 & 1.84 & 15.16 \\
+Mistral-7B-Instruct-v0.3 & 26.70 & 16.14 & 4.56 & 19.09 & 2.19 & 31.32 \\
+\bottomrule
+\end{tabular}
+\caption{Distribution over all datasets of GPT-5.4-mini translation-judged error labels (\%). \textsc{Struct.} denotes structural/formatting error, \textsc{Entity} denotes referent/entity substitution, \textsc{Event} denotes event/constraint distortion, \textsc{Cultural} denotes cultural/local-term mistranslation, and \textsc{Halluc.} denotes hallucination/over-answering. The most prominent errors across all models are structural/formatting errors, event/constraint distortions, and hallucination/over-answering.}
+\label{tab:mt1_audit_merged}
+\end{table}

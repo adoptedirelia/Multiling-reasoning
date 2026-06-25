@@ -1,0 +1,38 @@
+{
+  "description": "Additional GPT-5.4-mini translation-audit counts from the later 9060-example batch, merged with the 4830-example full 30-per-language run to reproduce the final table.",
+  "models": {
+    "gpt": {
+      "count": 9060,
+      "counts": {
+        "OK": 5093,
+        "1": 2784,
+        "2": 76,
+        "3": 613,
+        "4": 76,
+        "5": 418
+      }
+    },
+    "llama": {
+      "count": 9060,
+      "counts": {
+        "OK": 3386,
+        "1": 2627,
+        "2": 227,
+        "3": 1287,
+        "4": 153,
+        "5": 1380
+      }
+    },
+    "mistral": {
+      "count": 9060,
+      "counts": {
+        "OK": 2193,
+        "1": 2058,
+        "2": 302,
+        "3": 1460,
+        "4": 172,
+        "5": 2875
+      }
+    }
+  }
+}
