@@ -411,6 +411,34 @@ def export_metrics(
     return out_json
 
 
+def export_single_slice_metrics(
+    *,
+    dataset_key: str,
+    model: str,
+    dataset_json: Path,
+    input_json: Path,
+    slice_name: str,
+    out_json: Path,
+    dataset_split: str = "",
+    run_name: str = "",
+) -> Path:
+    dataset_records = _flatten_dataset_blob(_load_json(dataset_json), split=dataset_split)
+    payload = {
+        "run_name": run_name or f"{model}_{dataset_key}_{slice_name.replace('/', '_')}_accuracy_export",
+        "dataset": dataset_key,
+        "methods": ["accuracy"],
+        "slices": {
+            slice_name: _build_slice_payload(
+                dataset_key,
+                _score_rows(dataset_key, dataset_records, _load_rows(input_json)),
+            )
+        },
+    }
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_json.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    return out_json
+
+
 def _run_manifest(manifest_path: Path) -> List[Path]:
     manifest = _load_json(manifest_path)
     jobs = manifest["jobs"] if isinstance(manifest, dict) and "jobs" in manifest else manifest
@@ -419,19 +447,33 @@ def _run_manifest(manifest_path: Path) -> List[Path]:
 
     outputs = []
     for job in jobs:
-        outputs.append(
-            export_metrics(
-                dataset_key=job["dataset_key"],
-                model=job["model"],
-                dataset_json=Path(job["dataset_json"]),
-                standard_json=Path(job["standard_json"]),
-                context_json=Path(job["context_json"]),
-                direct_json=Path(job["direct_json"]) if job.get("direct_json") else None,
-                out_json=Path(job["out_json"]),
-                dataset_split=job.get("dataset_split", ""),
-                run_name=job.get("run_name", ""),
+        if job.get("input_json") and job.get("slice_name"):
+            outputs.append(
+                export_single_slice_metrics(
+                    dataset_key=job["dataset_key"],
+                    model=job["model"],
+                    dataset_json=Path(job["dataset_json"]),
+                    input_json=Path(job["input_json"]),
+                    slice_name=job["slice_name"],
+                    out_json=Path(job["out_json"]),
+                    dataset_split=job.get("dataset_split", ""),
+                    run_name=job.get("run_name", ""),
+                )
             )
-        )
+        else:
+            outputs.append(
+                export_metrics(
+                    dataset_key=job["dataset_key"],
+                    model=job["model"],
+                    dataset_json=Path(job["dataset_json"]),
+                    standard_json=Path(job["standard_json"]),
+                    context_json=Path(job["context_json"]),
+                    direct_json=Path(job["direct_json"]) if job.get("direct_json") else None,
+                    out_json=Path(job["out_json"]),
+                    dataset_split=job.get("dataset_split", ""),
+                    run_name=job.get("run_name", ""),
+                )
+            )
     return outputs
 
 
@@ -447,6 +489,8 @@ def main():
     parser.add_argument("--standard-json", default="")
     parser.add_argument("--context-json", default="")
     parser.add_argument("--direct-json", default="")
+    parser.add_argument("--input-json", default="")
+    parser.add_argument("--slice-name", default="")
     parser.add_argument("--out", default="")
     parser.add_argument("--run-name", default="")
     args = parser.parse_args()
@@ -455,31 +499,57 @@ def main():
     if args.manifest:
         outputs = _run_manifest(Path(args.manifest))
     else:
-        required = {
-            "--dataset-key": args.dataset_key,
-            "--model": args.model,
-            "--dataset-json": args.dataset_json,
-            "--standard-json": args.standard_json,
-            "--context-json": args.context_json,
-            "--out": args.out,
-        }
-        missing = [flag for flag, value in required.items() if not value]
-        if missing:
-            raise SystemExit(f"Missing required arguments: {', '.join(missing)}")
+        if args.input_json or args.slice_name:
+            required = {
+                "--dataset-key": args.dataset_key,
+                "--model": args.model,
+                "--dataset-json": args.dataset_json,
+                "--input-json": args.input_json,
+                "--slice-name": args.slice_name,
+                "--out": args.out,
+            }
+            missing = [flag for flag, value in required.items() if not value]
+            if missing:
+                raise SystemExit(f"Missing required arguments: {', '.join(missing)}")
 
-        outputs = [
-            export_metrics(
-                dataset_key=args.dataset_key,
-                model=args.model,
-                dataset_json=Path(args.dataset_json),
-                standard_json=Path(args.standard_json),
-                context_json=Path(args.context_json),
-                direct_json=Path(args.direct_json) if args.direct_json else None,
-                out_json=Path(args.out),
-                dataset_split=args.dataset_split,
-                run_name=args.run_name,
-            )
-        ]
+            outputs = [
+                export_single_slice_metrics(
+                    dataset_key=args.dataset_key,
+                    model=args.model,
+                    dataset_json=Path(args.dataset_json),
+                    input_json=Path(args.input_json),
+                    slice_name=args.slice_name,
+                    out_json=Path(args.out),
+                    dataset_split=args.dataset_split,
+                    run_name=args.run_name,
+                )
+            ]
+        else:
+            required = {
+                "--dataset-key": args.dataset_key,
+                "--model": args.model,
+                "--dataset-json": args.dataset_json,
+                "--standard-json": args.standard_json,
+                "--context-json": args.context_json,
+                "--out": args.out,
+            }
+            missing = [flag for flag, value in required.items() if not value]
+            if missing:
+                raise SystemExit(f"Missing required arguments: {', '.join(missing)}")
+
+            outputs = [
+                export_metrics(
+                    dataset_key=args.dataset_key,
+                    model=args.model,
+                    dataset_json=Path(args.dataset_json),
+                    standard_json=Path(args.standard_json),
+                    context_json=Path(args.context_json),
+                    direct_json=Path(args.direct_json) if args.direct_json else None,
+                    out_json=Path(args.out),
+                    dataset_split=args.dataset_split,
+                    run_name=args.run_name,
+                )
+            ]
 
     for out_path in outputs:
         print(out_path)

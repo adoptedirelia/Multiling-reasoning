@@ -9,8 +9,8 @@ from typing import Dict, List
 REPO_ROOT = Path("/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning")
 ANALYSIS_ROOT = REPO_ROOT / "results" / "translation_quality_analysis"
 WITH_HUMAN_ROOT = ANALYSIS_ROOT / "with_human_judge"
-FULL_105_PATH = WITH_HUMAN_ROOT / "full_105_human_llm_annotations.json"
 OUT_DIR = ANALYSIS_ROOT / "tables"
+FULL_105_PATH = OUT_DIR / "full_105_human_llm_annotations.json"
 
 LABELS = ["OK", "1", "2", "3", "4", "5"]
 RATERS = {

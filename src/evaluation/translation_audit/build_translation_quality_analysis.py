@@ -9,8 +9,8 @@ from typing import Dict, Tuple
 REPO_ROOT = Path("/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning")
 ANALYSIS_ROOT = REPO_ROOT / "results" / "translation_quality_analysis"
 FULL_ROOT = ANALYSIS_ROOT / "full_llm_judgements"
-SUPPLEMENTAL_COUNTS_PATH = ANALYSIS_ROOT / "supplemental_counts.json"
 OUT_DIR = ANALYSIS_ROOT / "tables"
+SUPPLEMENTAL_COUNTS_PATH = OUT_DIR / "supplemental_counts.json"
 
 MODELS = [
     ("gpt", "GPT-4o-mini"),
