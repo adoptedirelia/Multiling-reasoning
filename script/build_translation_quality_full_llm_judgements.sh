@@ -4,7 +4,12 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON_BIN="${PYTHON:-python3}"
 OUT_DIR="${REPO_ROOT}/results/translation_quality_analysis/full_llm_judgements"
-EXPORTS_DIR="${REPO_ROOT}/results2/analysis/mt1_translations"
+EXPORTS_DIR="${EXPORTS_DIR:-}"
+
+if [[ -z "${EXPORTS_DIR}" ]]; then
+  echo "Set EXPORTS_DIR to the MT1 translation exports directory." >&2
+  exit 1
+fi
 
 rm -f "${OUT_DIR}/manifest.json"
 
