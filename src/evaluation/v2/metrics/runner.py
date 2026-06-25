@@ -3,13 +3,13 @@ import json
 import logging
 import os
 import re
+import unicodedata
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..config import ModelEngineConfig
 from ..config import V2Config, load_config
 from ..loaders.registry import load_records_by_language
-from ..runtime.engine_factory import create_engine
 from . import mkqa_eval_util
 
 LOGGER = logging.getLogger(__name__)
@@ -51,6 +51,14 @@ def _write_jsonl(path: str, rows: List[Dict[str, Any]]):
     with open(path, "w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
+
+
+def _example_id_aliases(example_id: Any) -> List[str]:
+    ex_id = str(example_id)
+    aliases = [ex_id]
+    if ex_id.endswith("_v1"):
+        aliases.append(ex_id[: -len("_v1")])
+    return aliases
 
 
 def _derive_slice_from_row(r: Dict) -> str:
@@ -161,6 +169,40 @@ def _compute_bleu(
     return out
 
 
+def _compute_chrf(
+    groups: Dict[Tuple[str, str], List[Tuple[str, List[str]]]],
+) -> Dict[Tuple[str, str], float]:
+    try:
+        import sacrebleu
+    except ImportError as e:
+        raise RuntimeError("sacrebleu is not installed") from e
+
+    def _normalize_chrf_text(text: str) -> str:
+        return unicodedata.normalize("NFKC", text or "").lower()
+
+    out = {}
+    for key, items in groups.items():
+        hyps = []
+        refs_per_example = []
+        for pred, golds in items:
+            if not golds:
+                continue
+            hyps.append(_normalize_chrf_text(pred or ""))
+            refs_per_example.append([_normalize_chrf_text(g or "") for g in golds])
+        if not hyps:
+            out[key] = 0.0
+            continue
+        max_refs = max(len(r) for r in refs_per_example)
+        refs_for_sacrebleu: List[List[str]] = []
+        for r_idx in range(max_refs):
+            refs_for_sacrebleu.append(
+                [refs[r_idx] if r_idx < len(refs) else "" for refs in refs_per_example]
+            )
+        chrf = sacrebleu.corpus_chrf(hyps, refs_for_sacrebleu)
+        out[key] = round(float(chrf.score), 2)
+    return out
+
+
 def _compute_bertscore(
     groups: Dict[Tuple[str, str], List[Tuple[str, List[str]]]],
     model_type: str,
@@ -252,6 +294,8 @@ def _compute_win_rate_context_vs_standard(
             "timeout_s": cfg.eval.win_judge_timeout_s,
         },
     )
+    from ..runtime.engine_factory import create_engine
+
     engine = create_engine(judge_cfg)
     engine.load_model()
     try:
@@ -354,6 +398,8 @@ def _compute_win_rate_standard_vs_direct(
             "timeout_s": cfg.eval.win_judge_timeout_s,
         },
     )
+    from ..runtime.engine_factory import create_engine
+
     engine = create_engine(judge_cfg)
     engine.load_model()
     try:
@@ -430,10 +476,13 @@ def run_metrics(
         "loaded gold records by language: %s",
         {lang: len(recs) for lang, recs in records_by_lang.items()},
     )
-    gold_by_lang = {
-        lang: {r["example_id"]: r["y_l_gold"] for r in recs}
-        for lang, recs in records_by_lang.items()
-    }
+    gold_by_lang = {}
+    for lang, recs in records_by_lang.items():
+        by_id = {}
+        for r in recs:
+            for ex_id in _example_id_aliases(r["example_id"]):
+                by_id[ex_id] = r["y_l_gold"]
+        gold_by_lang[lang] = by_id
 
     groups: Dict[Tuple[str, str], List[Tuple[str, List[str]]]] = defaultdict(list)
     counts: Dict[Tuple[str, str], int] = defaultdict(int)
@@ -472,6 +521,9 @@ def run_metrics(
     if "bleu" in methods:
         LOGGER.info("computing metric: bleu")
         by_method["bleu"] = _compute_bleu(groups)
+    if "chrf" in methods:
+        LOGGER.info("computing metric: chrf")
+        by_method["chrf"] = _compute_chrf(groups)
     if "bertscore" in methods:
         LOGGER.info("computing metric: bertscore")
         by_method["bertscore_f1"] = _compute_bertscore(

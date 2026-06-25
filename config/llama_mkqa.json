@@ -1,0 +1,71 @@
+{
+  "run_name": "final_llama_mkqa",
+  "dataset": {
+    "dataset_type": "mkqa",
+    "mkqa_path": "ml-mkqa/dataset/mkqa.jsonl.gz",
+    "langs": [
+      "de",
+      "es",
+      "fi",
+      "fr",
+      "hu",
+      "it",
+      "ko",
+      "nl",
+      "pl",
+      "pt",
+      "ru",
+      "sv",
+      "tr",
+      "zh_hk",
+      "zh_tw",
+      "ar",
+      "da",
+      "he",
+      "ja",
+      "km",
+      "ms",
+      "no",
+      "th",
+      "vi",
+      "zh_cn"
+    ],
+    "max_examples": 20000,
+    "seed": 42
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "engine_kwargs": {}
+    },
+    "mt2": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "engine_kwargs": {}
+    }
+  },
+  "corruption": {
+    "input_jsonl": "results/error_prop_gpt/mkqa/mkqa_gpt_corruptions.jsonl",
+    "output_jsonl": "results/error_prop_gpt/mkqa/mkqa_gpt_corruptions.jsonl"
+  },
+  "cascade": {
+    "modes": [
+      "standard",
+      "context",
+      "direct"
+    ]
+  },
+  "eval": {
+    "methods": [
+      "f1",
+      "chrf"
+    ],
+    "prediction_field": "prediction"
+  },
+  "outputs": {
+    "predictions_jsonl": "results/llama/mkqa/preds",
+    "metrics_json": "results/llama/mkqa/metrics/metrics.json",
+    "logs_dir": "logs/llama/mkqa"
+  }
+}

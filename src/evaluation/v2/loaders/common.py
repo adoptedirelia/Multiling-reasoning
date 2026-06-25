@@ -1,19 +1,39 @@
 from typing import Dict, List, Optional
+from contextlib import contextmanager
+
+
+@contextmanager
+def _drop_removed_pandas_read_csv_kwargs():
+    import pandas as pd
+
+    original_read_csv = pd.read_csv
+
+    def read_csv_compat(*args, **kwargs):
+        kwargs.pop("verbose", None)
+        return original_read_csv(*args, **kwargs)
+
+    pd.read_csv = read_csv_compat
+    try:
+        yield
+    finally:
+        pd.read_csv = original_read_csv
 
 
 def load_hf_split(name: str, cfg_name: Optional[str], split_name: str):
     from datasets import load_dataset
 
     try:
-        if cfg_name is None:
-            return load_dataset(name, split=split_name)
-        return load_dataset(name, cfg_name, split=split_name)
+        with _drop_removed_pandas_read_csv_kwargs():
+            if cfg_name is None:
+                return load_dataset(name, split=split_name)
+            return load_dataset(name, cfg_name, split=split_name)
     except ValueError as e:
         msg = str(e)
         if 'Unknown split "' in msg and split_name != "test":
-            if cfg_name is None:
-                return load_dataset(name, split="test")
-            return load_dataset(name, cfg_name, split="test")
+            with _drop_removed_pandas_read_csv_kwargs():
+                if cfg_name is None:
+                    return load_dataset(name, split="test")
+                return load_dataset(name, cfg_name, split="test")
         raise
 
 
@@ -43,4 +63,3 @@ def mk_record(dataset: str, lang: str, example_id: str, x_l: str, y_l_gold: List
         "y_l_gold": y_l_gold,
         "meta": meta or {},
     }
-

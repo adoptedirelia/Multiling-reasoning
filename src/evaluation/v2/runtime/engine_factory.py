@@ -1,4 +1,6 @@
-from src.eval.engine import BaseEngine, LlamaEngine, OpenAIEngine, Qwen3Engine
+from src.eval.engine import BaseEngine, LlamaEngine, Qwen3Engine
+from src.eval.engine.mistral_ import MistralEngine
+from src.eval.engine.openai_ import OpenAIEngine
 
 from ..config import ModelEngineConfig
 
@@ -15,6 +17,14 @@ def create_engine(model_cfg: ModelEngineConfig) -> BaseEngine:
         )
     if model_type == "llama":
         return LlamaEngine(
+            model_name=model_cfg.model_name,
+            device_map=model_cfg.device_map,
+            torch_dtype=model_cfg.torch_dtype,
+            attn_implementation=model_cfg.attn_implementation,
+            **model_cfg.engine_kwargs,
+        )
+    if model_type == "mistral":
+        return MistralEngine(
             model_name=model_cfg.model_name,
             device_map=model_cfg.device_map,
             torch_dtype=model_cfg.torch_dtype,

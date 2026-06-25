@@ -51,7 +51,7 @@ class MT2Standard:
             temperature=temperature,
             top_p=top_p,
         )
-        return [extract_answer(_strip_prompt_echo(o, prompts[i])) for i, o in enumerate(outputs)]
+        return [_extract_mt2_answer_or_full(o, prompts[i]) for i, o in enumerate(outputs)]
 
 
 class MT2Context:
@@ -79,7 +79,7 @@ class MT2Context:
             temperature=temperature,
             top_p=top_p,
         )
-        return [extract_answer(_strip_prompt_echo(o, prompts[i])) for i, o in enumerate(outputs)]
+        return [_extract_mt2_answer_or_full(o, prompts[i]) for i, o in enumerate(outputs)]
 
 
 class MT1Translator:
@@ -97,17 +97,16 @@ class MT1Translator:
         )
         cleaned = []
         for i, raw in enumerate(outputs):
-            answer_blocks = _extract_tag_all(raw, "answer")
-            chosen = ""
-            for cand in reversed(answer_blocks):
-                cand = _clean_mt1_text(cand)
-                if not _invalid_translation_text(cand):
-                    chosen = cand
-                    break
-            if not chosen:
-                body = _strip_prompt_echo(raw, prompts[i]).strip()
-                fallback = _clean_mt1_text(body)
-                chosen = fallback if fallback else ""
+            body = _strip_prompt_echo(raw, prompts[i]).strip()
+            # Use strict closed tags when present; otherwise keep full output.
+            translation_blocks = _extract_tag_all(body, "translation")
+            answer_blocks = _extract_tag_all(body, "answer")
+            if translation_blocks:
+                chosen = _clean_mt1_text(translation_blocks[-1])
+            elif answer_blocks:
+                chosen = _clean_mt1_text(answer_blocks[-1])
+            else:
+                chosen = body
             cleaned.append(chosen)
         return cleaned
 
@@ -220,8 +219,6 @@ def _invalid_reasoner_pair(reasoning: str, answer: str) -> bool:
         return True
     if "```" in answer:
         return True
-    if len(answer) > 400 and "<answer>" not in answer.lower():
-        return True
     return False
 
 
@@ -258,6 +255,18 @@ def _extract_tag_all(text: str, tag: str) -> List[str]:
     return [m.strip() for m in re.findall(pattern, t, re.DOTALL | re.IGNORECASE)]
 
 
+def _extract_mt2_answer_or_full(raw: str, prompt: str) -> str:
+    body = _strip_prompt_echo(raw, prompt).strip()
+    answer_blocks = _extract_tag_all(body, "answer")
+    if answer_blocks:
+        for block in answer_blocks:
+            cleaned = block.strip()
+            if cleaned:
+                return cleaned
+        return answer_blocks[0].strip()
+    return body
+
+
 def _clean_mt1_text(text: str) -> str:
     t = (text or "").replace("```", " ").strip()
     if not t:
@@ -277,17 +286,20 @@ def _clean_mt1_text(text: str) -> str:
     close_idx = t.lower().find("</answer>")
     if close_idx != -1:
         t = t[:close_idx].strip()
+    close_idx = t.lower().find("</translation>")
+    if close_idx != -1:
+        t = t[:close_idx].strip()
     lines = [ln.strip() for ln in t.splitlines() if ln.strip()]
-    return lines[0] if lines else ""
+    return "\n".join(lines) if lines else ""
 
 
 def _sanitize_answer_fallback(answer: str, question_en: str) -> str:
     if not answer:
         return question_en
-    first_line = answer.strip().splitlines()[0].strip()
-    if not first_line:
+    cleaned = answer.strip()
+    if not cleaned:
         return question_en
-    return first_line
+    return cleaned
 
 
 def _fallback_shift_intent(x_en: str) -> str:

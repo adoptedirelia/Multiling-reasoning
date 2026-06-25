@@ -2,7 +2,9 @@ import re
 import json
 from typing import Dict, Optional, List
 from src.eval.config import EvalConfig, ModelConfig, load_config_from_dict
-from src.eval.engine import Qwen3Engine, MistralEngine, OpenAIEngine, BaseEngine
+from src.eval.engine import Qwen3Engine, LlamaEngine, BaseEngine
+from src.eval.engine.mistral_ import MistralEngine
+from src.eval.engine.openai_ import OpenAIEngine
 from src.prompt import (
     MT1_PROMPT, MT2_PROMPT, REASONING_PROMPT, MT2_BASE_PROMPT, END_TO_END_PROMPT,
     MATH_REASONING_PROMPT, MATH_MT2_BASE_PROMPT, MATH_MT2_PROMPT, MATH_END_TO_END_PROMPT,
@@ -220,6 +222,13 @@ def create_engine(model_config: ModelConfig) -> BaseEngine:
             attn_implementation=model_config.attn_implementation,
             lora_path=model_config.lora_path
         )
+    elif model_config.model_type.lower() == "llama":
+        return LlamaEngine(
+            model_name=model_config.model_name,
+            device_map=model_config.device_map,
+            torch_dtype=model_config.torch_dtype,
+            attn_implementation=model_config.attn_implementation,
+        )
     elif model_config.model_type.lower() == "mistral":
         return MistralEngine(
             model_name=model_config.model_name,
@@ -412,14 +421,16 @@ def run_mt2(engine: BaseEngine, questions: str, english_questions: str, english_
 def translate_questions_batch(engine: BaseEngine, questions: List[str], 
                               model_config: Optional[ModelConfig] = None,
                               batch_size: int = 1,
-                              options: Optional[List[Dict[str, str]]] = None) -> List[Dict[str, str]]:
+                              options: Optional[List[Dict[str, str]]] = None,
+                              return_structured: bool = False) -> List:
     """
-    Translate all questions (and MC options) from target language to English (MT1 step).
+    Translate all questions (and optionally MC options) from target language to English.
 
     Returns:
-        List of dicts, each containing at minimum ``{"translation": "<english question>"}``
-        and, for MC questions, also ``{"option_a": "...", "option_b": "...", ...}`` with
-        the English-translated text for every option present in the original.
+        If ``return_structured`` is True, returns a list of dicts, each containing at
+        minimum ``{"translation": "<english question>"}`` and, for MC questions,
+        per-option translations. Otherwise returns a backward-compatible list of English
+        question strings.
     """
     translation_results: List[Dict[str, str]] = []
 
@@ -446,7 +457,9 @@ def translate_questions_batch(engine: BaseEngine, questions: List[str],
         results = [extract_translation_output(output) for output in batch_outputs]
         translation_results.extend(results)
 
-    return translation_results
+    if return_structured:
+        return translation_results
+    return [result.get("translation", "") for result in translation_results]
 
 def run_end_to_end(engine: BaseEngine, questions: List[str], languages: List[str] = None, 
                    model_config: Optional[ModelConfig] = None, eval_config: Optional[EvalConfig] = None,

@@ -1,0 +1,73 @@
+{
+  "run_name": "final_mistral_blend",
+  "dataset": {
+    "dataset_type": "blend",
+    "langs": [
+      "CN",
+      "ES",
+      "MX",
+      "ID",
+      "KR",
+      "KP",
+      "GR",
+      "IR",
+      "DZ",
+      "AZ",
+      "JB",
+      "AS",
+      "NG",
+      "ET"
+    ],
+    "max_examples": 400000,
+    "seed": 42,
+    "hf_name": "nayeon212/BLEnD",
+    "hf_split": "test",
+    "hf_configs": {
+      "CN": "short-answer-questions",
+      "ES": "short-answer-questions",
+      "MX": "short-answer-questions",
+      "ID": "short-answer-questions",
+      "KR": "short-answer-questions",
+      "KP": "short-answer-questions",
+      "GR": "short-answer-questions",
+      "IR": "short-answer-questions",
+      "DZ": "short-answer-questions",
+      "AZ": "short-answer-questions",
+      "JB": "short-answer-questions",
+      "AS": "short-answer-questions",
+      "NG": "short-answer-questions",
+      "ET": "short-answer-questions"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "mistral",
+      "model_name": "mistralai/Mistral-7B-Instruct-v0.3",
+      "engine_kwargs": {}
+    },
+    "mt2": {
+      "model_type": "mistral",
+      "model_name": "mistralai/Mistral-7B-Instruct-v0.3",
+      "engine_kwargs": {}
+    }
+  },
+  "cascade": {
+    "modes": [
+      "standard",
+      "context",
+      "direct"
+    ]
+  },
+  "eval": {
+    "methods": [
+      "f1",
+      "chrf"
+    ],
+    "prediction_field": "prediction"
+  },
+  "outputs": {
+    "predictions_jsonl": "results/mistral/blend/preds",
+    "metrics_json": "results/mistral/blend/metrics/metrics.json",
+    "logs_dir": "logs/mistral/blend"
+  }
+}

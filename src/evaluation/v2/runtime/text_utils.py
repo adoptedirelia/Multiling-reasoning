@@ -11,16 +11,25 @@ def _extract_tag_tolerant(text: str, tag: str) -> str:
 
     strict = re.findall(rf"<{tag}>(.*?)</{tag}>", t, re.DOTALL | re.IGNORECASE)
     if strict:
-        return strict[-1].strip()
+        for match in strict:
+            cleaned = match.strip()
+            if cleaned:
+                return cleaned
+        return strict[0].strip()
 
     open_pat = re.compile(rf"<{tag}>", re.IGNORECASE)
     starts = list(open_pat.finditer(t))
     if starts:
-        start = starts[-1].end()
-        remainder = t[start:]
-        next_tag = re.search(r"</?[a-zA-Z_][a-zA-Z0-9_]*>", remainder)
-        chunk = remainder[: next_tag.start()] if next_tag else remainder
-        return chunk.strip()
+        for start_match in starts:
+            start = start_match.end()
+            remainder = t[start:]
+            next_tag = re.search(r"</?[a-zA-Z_][a-zA-Z0-9_]*>", remainder)
+            chunk = remainder[: next_tag.start()] if next_tag else remainder
+            cleaned = chunk.strip()
+            if cleaned:
+                return cleaned
+        start = starts[0].end()
+        return t[start:].strip()
 
     return ""
 

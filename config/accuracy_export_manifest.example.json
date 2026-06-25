@@ -1,0 +1,15 @@
+{
+  "jobs": [
+    {
+      "dataset_key": "mmlu",
+      "model": "llama",
+      "dataset_json": "dataset/GlobalMMLU_test.json",
+      "dataset_split": "test",
+      "standard_json": "path/to/mmlu_standard_raw.json",
+      "context_json": "path/to/mmlu_context_raw.json",
+      "direct_json": "path/to/mmlu_direct_raw.json",
+      "out_json": "results/llama/mmlu/metrics/metrics.json",
+      "run_name": "llama_mmlu_accuracy_export"
+    }
+  ]
+}

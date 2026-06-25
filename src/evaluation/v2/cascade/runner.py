@@ -9,6 +9,7 @@ from typing import Dict, List
 from ..config import V2Config, load_config
 from ..loaders.registry import load_records_by_language
 from ..runtime.engine_factory import create_engine
+from ..runtime.language_names import target_language_name
 from ..runtime.models import ENReasoner, MT2Context, MT2Standard
 from ..runtime.prompts import direct_answer_prompt
 
@@ -176,6 +177,7 @@ def run_cascade_predictions(config_path: str, corruption_jsonl: str = "", out_js
 
             x_l = [rec_map[ex_id]["x_l"] for ex_id in example_ids]
             x_en = [x_en_map[ex_id].strip() for ex_id in example_ids]
+            target_lang = target_language_name(lang)
 
             base = reasoner.run_batch(
                 x_en,
@@ -186,8 +188,8 @@ def run_cascade_predictions(config_path: str, corruption_jsonl: str = "", out_js
             r_en_base = [b["reasoning"] for b in base]
             y_en_base = [b["answer"] for b in base]
 
-            mt2_std = MT2Standard(mt2_engine, lang)
-            mt2_ctx = MT2Context(mt2_engine, lang)
+            mt2_std = MT2Standard(mt2_engine, target_lang)
+            mt2_ctx = MT2Context(mt2_engine, target_lang)
 
             def run_mode(
                 mode: str,
@@ -204,7 +206,7 @@ def run_cascade_predictions(config_path: str, corruption_jsonl: str = "", out_js
                         top_p=cfg.generation.mt2_top_p,
                     )
                 if mode == "direct":
-                    prompts = [direct_answer_prompt(q, lang) for q in x_l_in]
+                    prompts = [direct_answer_prompt(q, target_lang) for q in x_l_in]
                     raw = get_engine(cfg.models["reasoner_en"]).generate_batch(
                         prompts,
                         max_new_tokens=cfg.generation.mt1_max_new_tokens,

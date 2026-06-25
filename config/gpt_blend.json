@@ -1,0 +1,90 @@
+{
+  "run_name": "gpt_blend",
+  "dataset": {
+    "dataset_type": "blend",
+    "langs": [
+      "CN",
+      "ES",
+      "MX",
+      "ID",
+      "KR",
+      "KP",
+      "GR",
+      "IR",
+      "DZ",
+      "AZ",
+      "JB",
+      "AS",
+      "NG",
+      "ET"
+    ],
+    "max_examples": 30,
+    "seed": 42,
+    "hf_name": "nayeon212/BLEnD",
+    "hf_split": "test",
+    "hf_configs": {
+      "CN": "short-answer-questions",
+      "ES": "short-answer-questions",
+      "MX": "short-answer-questions",
+      "ID": "short-answer-questions",
+      "KR": "short-answer-questions",
+      "KP": "short-answer-questions",
+      "GR": "short-answer-questions",
+      "IR": "short-answer-questions",
+      "DZ": "short-answer-questions",
+      "AZ": "short-answer-questions",
+      "JB": "short-answer-questions",
+      "AS": "short-answer-questions",
+      "NG": "short-answer-questions",
+      "ET": "short-answer-questions"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "openai",
+      "model_name": "gpt-4o-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 300
+      }
+    },
+    "mt2": {
+      "model_type": "openai",
+      "model_name": "gpt-4o-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 300
+      }
+    }
+  },
+  "cascade": {
+    "modes": [
+      "standard",
+      "context",
+      "direct"
+    ]
+  },
+  "eval": {
+    "methods": [
+      "f1",
+      "chrf"
+    ],
+    "prediction_field": "prediction"
+  },
+  "outputs": {
+    "predictions_jsonl": "results/gpt/blend/preds",
+    "metrics_json": "results/gpt/blend/metrics/metrics.json",
+    "logs_dir": "logs/gpt/blend"
+  },
+  "generation": {
+    "mt1_max_new_tokens": 8192,
+    "mt1_temperature": 0.0,
+    "mt1_top_p": 1.0,
+    "mt2_max_new_tokens": 8192,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0,
+    "corruption_max_new_tokens": 8192,
+    "corruption_temperature": 0.3,
+    "corruption_top_p": 0.9
+  }
+}

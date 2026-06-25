@@ -13,6 +13,18 @@ _GLOBAL_PIQA_CONFIG_ALIASES = {
 }
 
 
+def _iter_direct_tsv_rows(hf_name: str, cfg_name: str):
+    import pandas as pd
+    from huggingface_hub import hf_hub_download
+
+    path = hf_hub_download(
+        repo_id=hf_name,
+        repo_type="dataset",
+        filename=f"data/nonparallel_{cfg_name}.tsv",
+    )
+    return pd.read_csv(path, sep="\t").to_dict("records")
+
+
 def load_for_lang(
     hf_name: str,
     split: str,
@@ -27,7 +39,14 @@ def load_for_lang(
             return []
         cfg_name = _GLOBAL_PIQA_CONFIG_ALIASES.get(raw, raw)
 
-    ds = load_hf_split(hf_name, cfg_name, split)
+    if cfg_name is None:
+        ds = load_hf_split(hf_name, cfg_name, split)
+    else:
+        try:
+            ds = _iter_direct_tsv_rows(hf_name, cfg_name)
+        except Exception:
+            ds = load_hf_split(hf_name, cfg_name, split)
+
     records: List[Dict] = []
     for idx, row in enumerate(ds):
         prompt = (row.get("prompt") or "").strip()
@@ -58,4 +77,3 @@ def load_for_lang(
         if len(records) >= max_examples:
             break
     return records
-

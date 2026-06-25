@@ -1,0 +1,78 @@
+{
+  "run_name": "gpt_aya",
+  "dataset": {
+    "dataset_type": "aya",
+    "langs": [
+      "tel",
+      "yor",
+      "arb",
+      "tur",
+      "por",
+      "zho"
+    ],
+    "max_examples": 30,
+    "seed": 42,
+    "hf_name": "CohereLabs/aya_evaluation_suite",
+    "hf_split": "test",
+    "hf_configs": {
+      "tel": "aya_human_annotated",
+      "yor": "aya_human_annotated",
+      "arb": "aya_human_annotated",
+      "tur": "aya_human_annotated",
+      "por": "aya_human_annotated",
+      "zho": "aya_human_annotated"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "openai",
+      "model_name": "gpt-4o-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 300
+      }
+    },
+    "mt2": {
+      "model_type": "openai",
+      "model_name": "gpt-4o-mini",
+      "engine_kwargs": {
+        "api_key_env": "OPENAI_API_KEY",
+        "timeout_s": 300
+      }
+    }
+  },
+  "corruption": {
+    "input_jsonl": "results/error_prop_gpt/aya/aya_gpt_corruptions.jsonl",
+    "output_jsonl": "results/error_prop_gpt/aya/aya_gpt_corruptions.jsonl"
+  },
+  "cascade": {
+    "modes": [
+      "standard",
+      "context",
+      "direct"
+    ]
+  },
+  "eval": {
+    "methods": [
+      "f1",
+      "chrf"
+    ],
+    "prediction_field": "prediction"
+  },
+  "outputs": {
+    "predictions_jsonl": "results/gpt/aya/preds",
+    "metrics_json": "results/gpt/aya/metrics/metrics.json",
+    "logs_dir": "logs/gpt/aya"
+  },
+  "generation": {
+    "mt1_max_new_tokens": 8192,
+    "mt1_temperature": 0.0,
+    "mt1_top_p": 1.0,
+    "mt2_max_new_tokens": 8192,
+    "mt2_temperature": 0.0,
+    "mt2_top_p": 1.0,
+    "corruption_max_new_tokens": 8192,
+    "corruption_temperature": 0.3,
+    "corruption_top_p": 0.9
+  }
+}

@@ -104,8 +104,8 @@ def load_config(path: str) -> V2Config:
     dataset = DatasetConfig(**raw["dataset"])
     if dataset.dataset_type == "mkqa" and not dataset.mkqa_path:
         raise ValueError("dataset.mkqa_path is required for mkqa")
-    if dataset.dataset_type in {"aya", "global_piqa"} and not dataset.hf_name:
-        raise ValueError("dataset.hf_name is required for aya/global_piqa")
+    if dataset.dataset_type in {"aya", "global_piqa", "blend"} and not dataset.hf_name:
+        raise ValueError("dataset.hf_name is required for aya/global_piqa/blend")
 
     models_raw = raw.get("models", {})
     reasoner_raw = models_raw.get("reasoner_en")

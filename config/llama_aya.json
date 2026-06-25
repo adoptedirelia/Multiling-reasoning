@@ -1,0 +1,61 @@
+{
+  "run_name": "final_llama_aya",
+  "dataset": {
+    "dataset_type": "aya",
+    "langs": [
+      "tel",
+      "yor",
+      "arb",
+      "tur",
+      "por",
+      "zho"
+    ],
+    "max_examples": 2000,
+    "seed": 42,
+    "hf_name": "CohereLabs/aya_evaluation_suite",
+    "hf_split": "test",
+    "hf_configs": {
+      "tel": "aya_human_annotated",
+      "yor": "aya_human_annotated",
+      "arb": "aya_human_annotated",
+      "tur": "aya_human_annotated",
+      "por": "aya_human_annotated",
+      "zho": "aya_human_annotated"
+    }
+  },
+  "models": {
+    "reasoner_en": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "engine_kwargs": {}
+    },
+    "mt2": {
+      "model_type": "llama",
+      "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+      "engine_kwargs": {}
+    }
+  },
+  "corruption": {
+    "input_jsonl": "results/error_prop_gpt/aya/aya_gpt_corruptions.jsonl",
+    "output_jsonl": "results/error_prop_gpt/aya/aya_gpt_corruptions.jsonl"
+  },
+  "cascade": {
+    "modes": [
+      "standard",
+      "context",
+      "direct"
+    ]
+  },
+  "eval": {
+    "methods": [
+      "f1",
+      "chrf"
+    ],
+    "prediction_field": "prediction"
+  },
+  "outputs": {
+    "predictions_jsonl": "results/llama/aya/preds",
+    "metrics_json": "results/llama/aya/metrics/metrics.json",
+    "logs_dir": "logs/llama/aya"
+  }
+}

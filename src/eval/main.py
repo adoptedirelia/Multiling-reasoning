@@ -89,6 +89,7 @@ def translate_questions(config: EvalConfig) -> List[str]:
                 config.mt1_config,
                 batch_size=len(batch_questions),
                 options=batch_opts,
+                return_structured=True,
             )
 
             for j, output in enumerate(batch_outputs):
