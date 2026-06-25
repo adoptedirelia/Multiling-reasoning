@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 
-REPO_ROOT = Path("/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning")
+REPO_ROOT = Path(__file__).resolve().parents[3]
 ANALYSIS_ROOT = REPO_ROOT / "results" / "translation_quality_analysis"
 FULL_ROOT = ANALYSIS_ROOT / "full_llm_judgements"
 OUT_DIR = ANALYSIS_ROOT / "tables"

@@ -121,9 +121,13 @@ def load_resource_maps():
 
 
 PIQA_NAMES = load_resource_maps()
-REPORT_FILES = {
-    "llama": REPO_ROOT / "ablation_report_llama.md",
-    "mistral": REPO_ROOT / "ablation_report_mistral.md",
+ACCURACY_DATASET_KEYS = {
+    "Global MMLU": "mmlu",
+    "Belebele": "belebele",
+    "Global-PIQA": "global-piqa-mc",
+    "MCSQA": "mcsqa",
+    "MGSM": "mgsm",
+    "MMath": "mmath",
 }
 
 
@@ -187,36 +191,68 @@ def dataset_name_map(dataset):
 
 
 def metrics_path(model, dataset, variant=None):
-    candidates = []
     if variant is None:
-        candidates.extend(
-            [
-                REPO_ROOT / "results" / model / dataset / "metrics" / "metrics.json",
-                REPO_ROOT / "results2" / "final" / model / dataset / "metrics" / "metrics.json",
-                REPO_ROOT / "results" / model / dataset / "metrics" / "metrics.json",
-                REPO_ROOT / "results/final" / model / dataset / "metrics" / "metrics.json",
-            ]
-        )
-    else:
-        candidates.extend(
-            [
-                REPO_ROOT / "results" / model / (dataset + "-ablation") / variant / "metrics" / "metrics.json",
-                REPO_ROOT / "results2" / "final" / model / (dataset + "-ablation") / variant / "metrics" / "metrics.json",
-                REPO_ROOT / "results/final" / model / (dataset + "-ablation") / variant / "metrics" / "metrics.json",
-            ]
-        )
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return candidates[0]
+        return REPO_ROOT / "results" / model / dataset / "metrics" / "metrics.json"
+    return REPO_ROOT / "results" / model / (dataset + "-ablation") / variant / "metrics" / "metrics.json"
+
+
+def load_metric_map(path, slice_name):
+    obj = json.loads(path.read_text())
+    by_language = obj["slices"][slice_name]["by_language"]
+    sample = next(iter(by_language.values()))
+    metric_name = "chrf" if "chrf" in sample else "accuracy"
+    return {
+        key: float(value[metric_name])
+        for key, value in by_language.items()
+    }
 
 
 def load_slice(path, slice_name):
+    return load_metric_map(path, slice_name)
+
+
+def load_slice_blob(path, slice_name):
     obj = json.loads(path.read_text())
-    return {
-        key: float(value["chrf"])
-        for key, value in obj["slices"][slice_name]["by_language"].items()
+    return obj["slices"][slice_name]
+
+
+def load_accuracy_dataset_overall_from_metrics(model, dataset_key):
+    values = {}
+    std_slice = load_slice_blob(metrics_path(model, dataset_key), "baseline/standard")
+    ctx_slice = load_slice_blob(metrics_path(model, dataset_key), "baseline/context")
+    values["standard"] = float(std_slice["overall"])
+    values["context"] = float(ctx_slice["overall"])
+    for method, _, _ in METHODS:
+        if method == "context":
+            continue
+        values[method] = float(
+            load_slice_blob(
+                metrics_path(model, dataset_key, method),
+                f"baseline/{method}",
+            )["overall"]
+        )
+    return values
+
+
+def load_accuracy_dataset_resources_from_metrics(model, dataset_key):
+    values = {bucket: {} for bucket in RESOURCE_ORDER}
+    slices = {
+        "standard": load_slice_blob(metrics_path(model, dataset_key), "baseline/standard"),
+        "context": load_slice_blob(metrics_path(model, dataset_key), "baseline/context"),
     }
+    for method, _, _ in METHODS:
+        if method == "context":
+            continue
+        slices[method] = load_slice_blob(
+            metrics_path(model, dataset_key, method),
+            f"baseline/{method}",
+        )
+    for bucket in RESOURCE_ORDER:
+        for method_name, slice_blob in slices.items():
+            values[bucket][method_name] = float(
+                slice_blob.get("by_resource", {}).get(bucket, {}).get("overall", np.nan)
+            )
+    return values
 
 
 def load_dataset_rows(model, dataset):
@@ -252,77 +288,6 @@ def load_dataset_rows(model, dataset):
     return rows
 
 
-def parse_report_tables(model):
-    lines = REPORT_FILES[model].read_text(encoding="utf-8").splitlines()
-    overall = {}
-    grouped = {}
-    current = None
-    in_overall = False
-    in_group = False
-    for line in lines:
-        stripped = line.strip()
-        if stripped == "## Overall Accuracy":
-            in_overall = True
-            continue
-        if stripped.startswith("## "):
-            in_overall = False
-            in_group = False
-            current = stripped[3:].strip()
-            continue
-        if in_overall:
-            if stripped.startswith("|") and "Dataset" not in stripped and "---" not in stripped:
-                parts = [p.strip().replace("**", "") for p in stripped.strip("|").split("|")]
-                if len(parts) == 6:
-                    label = parts[0]
-                    overall[label] = {
-                        "standard": float(parts[1].rstrip("%")),
-                        "context": float(parts[2].rstrip("%")),
-                        "answer_plus_source_question": float(parts[3].rstrip("%")),
-                        "answer_plus_english_question": float(parts[4].rstrip("%")),
-                        "answer_plus_reasoning": float(parts[5].rstrip("%")),
-                    }
-            continue
-        if stripped == "### Group Average":
-            in_group = True
-            grouped.setdefault(current, {})
-            continue
-        if in_group:
-            if stripped.startswith("### ") or stripped.startswith("## "):
-                in_group = False
-                continue
-            if stripped.startswith("|") and "Resource Level" not in stripped and "---" not in stripped:
-                parts = [p.strip().replace("**", "") for p in stripped.strip("|").split("|")]
-                if len(parts) == 7 and parts[0] in {"High-resource", "Mid-resource", "Low-resource"}:
-                    bucket = {
-                        "High-resource": "high",
-                        "Mid-resource": "mid",
-                        "Low-resource": "low",
-                    }[parts[0]]
-                    grouped[current][bucket] = {
-                        "standard": float(parts[2].rstrip("%")),
-                        "context": float(parts[3].rstrip("%")),
-                        "answer_plus_source_question": float(parts[4].rstrip("%")),
-                        "answer_plus_english_question": float(parts[5].rstrip("%")),
-                        "answer_plus_reasoning": float(parts[6].rstrip("%")),
-                    }
-    return overall, grouped
-
-
-def report_section_key(grouped_report, label):
-    if label in grouped_report:
-        return label
-    for key in grouped_report:
-        if key.startswith(label + " " ) or key.startswith(label + "("):
-            return key
-    raise KeyError(label)
-
-
-REPORT_CACHE = {
-    "llama": parse_report_tables("llama"),
-    "mistral": parse_report_tables("mistral"),
-}
-
-
 def delta_means(model):
     out = {}
     for dataset, _ in DATASETS:
@@ -336,7 +301,6 @@ def delta_means(model):
 
 def delta_means_all(model):
     out = {}
-    overall_report, _ = REPORT_CACHE[model]
     for dataset, label, source in ALL_DATASETS:
         if source == "oe":
             rows = load_dataset_rows(model, dataset)
@@ -344,7 +308,8 @@ def delta_means_all(model):
             for method, _, _ in METHODS:
                 out[dataset][method] = np.mean([r[method] - r["standard"] for r in rows])
         else:
-            row = overall_report[label]
+            dataset_key = ACCURACY_DATASET_KEYS[label]
+            row = load_accuracy_dataset_overall_from_metrics(model, dataset_key)
             out[dataset] = {}
             for method, _, _ in METHODS:
                 out[dataset][method] = row[method] - row["standard"]
@@ -353,7 +318,6 @@ def delta_means_all(model):
 
 def percent_means_all(model):
     out = {}
-    overall_report, _ = REPORT_CACHE[model]
     for dataset, label, source in ALL_DATASETS:
         out[dataset] = {}
         if source == "oe":
@@ -365,7 +329,8 @@ def percent_means_all(model):
                     vals.append(0.0 if std == 0 else 100.0 * (row[method] - std) / std)
                 out[dataset][method] = np.mean(vals)
         else:
-            row = overall_report[label]
+            dataset_key = ACCURACY_DATASET_KEYS[label]
+            row = load_accuracy_dataset_overall_from_metrics(model, dataset_key)
             std = row["standard"]
             for method, _, _ in METHODS:
                 out[dataset][method] = 0.0 if std == 0 else 100.0 * (row[method] - std) / std
@@ -390,7 +355,6 @@ def resource_means(model):
 
 def resource_means_all(model):
     out = {}
-    _, grouped_report = REPORT_CACHE[model]
     for dataset, label, source in ALL_DATASETS:
         if source == "oe":
             rows = load_dataset_rows(model, dataset)
@@ -404,12 +368,8 @@ def resource_means_all(model):
                     else:
                         out[dataset][bucket][method] = np.nan
         else:
-            out[dataset] = {}
-            section = grouped_report[report_section_key(grouped_report, label)]
-            for bucket in RESOURCE_ORDER:
-                out[dataset][bucket] = {}
-                for method, _, _ in METHODS:
-                    out[dataset][bucket][method] = section.get(bucket, {}).get(method, np.nan)
+            dataset_key = ACCURACY_DATASET_KEYS[label]
+            out[dataset] = load_accuracy_dataset_resources_from_metrics(model, dataset_key)
     return out
 
 

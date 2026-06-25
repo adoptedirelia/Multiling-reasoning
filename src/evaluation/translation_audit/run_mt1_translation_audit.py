@@ -552,7 +552,7 @@ def validate_existing_manifest(out_dir: Path, manifest: dict) -> None:
 
 def main():
     ap = argparse.ArgumentParser(description="Audit MT1 translations with an OpenAI judge model.")
-    ap.add_argument("--repo-root", default="/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning")
+    ap.add_argument("--repo-root", default=str(Path(__file__).resolve().parents[3]))
     ap.add_argument(
         "--exports-dir",
         default="results/analysis/mt1_translations",

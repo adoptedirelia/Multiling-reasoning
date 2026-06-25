@@ -29,19 +29,6 @@ DATASET_GROUPS = {
     "mmath": "math",
 }
 
-CURRENT_MODEL_DIR = {
-    "llama": "llama",
-    "mistral": "mistral",
-    "gpt": "gpt",
-}
-
-LEGACY_MODEL_DIR = {
-    "llama": "llama",
-    "mistral": "mistral",
-    "gpt": "gpt-30-samples",
-}
-
-
 def round_half_up(value: float, ndigits: int) -> float:
     quantum = "1." + ("0" * ndigits)
     return float(Decimal(str(value)).quantize(Decimal(quantum), rounding=ROUND_HALF_UP))
@@ -55,11 +42,7 @@ def subtract_rounded(a: float, b: float, ndigits: int) -> float:
 
 
 def resolve_metrics_path(repo_root: Path, model: str, dataset_key: str) -> Path:
-    current = repo_root / "results" / CURRENT_MODEL_DIR[model] / dataset_key / "metrics" / "metrics.json"
-    if current.exists():
-        return current
-    legacy = repo_root / "results2" / "final" / LEGACY_MODEL_DIR[model] / dataset_key / "metrics" / "metrics.json"
-    return legacy
+    return repo_root / "results" / model / dataset_key / "metrics" / "metrics.json"
 
 
 def load_macro_average(metrics_path: Path, slice_key: str) -> float:

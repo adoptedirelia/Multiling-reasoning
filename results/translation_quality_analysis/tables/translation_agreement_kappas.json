@@ -1,5 +1,5 @@
 {
-  "annotation_source": "/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning/results/translation_quality_analysis/tables/full_105_human_llm_annotations.json",
+  "annotation_source": "results/translation_quality_analysis/tables/full_105_human_llm_annotations.json",
   "n_items": 105,
   "label_space": [
     "OK",

@@ -18,7 +18,7 @@ def main() -> None:
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
-    out_dir = Path(args.out_dir).resolve() if args.out_dir else repo_root / "src/evaluation/sig_testing/results" / args.model
+    out_dir = Path(args.out_dir).resolve() if args.out_dir else repo_root / "results" / "significance" / args.model
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows = compute_ctx_std_tests_for_model(repo_root, args.model)

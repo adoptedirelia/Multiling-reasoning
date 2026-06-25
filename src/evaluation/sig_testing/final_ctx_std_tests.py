@@ -91,7 +91,7 @@ def _bh_adjust(pvals: List[float]) -> List[float]:
 
 
 def default_metrics_path(repo_root: Path, model: str, dataset_key: str) -> Path:
-    return repo_root / "results" / "final" / model / dataset_key / "metrics" / "metrics.json"
+    return repo_root / "results" / model / dataset_key / "metrics" / "metrics.json"
 
 
 def compute_ctx_std_tests_for_model(
@@ -106,7 +106,9 @@ def compute_ctx_std_tests_for_model(
     for dataset_key, dataset_label in DATASET_ORDER:
         metrics_path = metrics_path_resolver(repo_root, model, dataset_key)
         if not metrics_path.exists():
-            continue
+            raise FileNotFoundError(
+                f"Missing metrics for model={model} dataset={dataset_key}: {metrics_path}"
+            )
         metric, std_scores, ctx_scores = _load_language_scores(metrics_path)
         langs = sorted(set(std_scores) & set(ctx_scores))
         deltas = [ctx_scores[lang] - std_scores[lang] for lang in langs]

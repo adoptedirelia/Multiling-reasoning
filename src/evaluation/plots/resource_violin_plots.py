@@ -186,59 +186,7 @@ def oe_dataset_score_code(dataset: str, code: str):
 
 
 def metrics_path(model: str, dataset: str) -> Path:
-    candidates = [
-        REPO_ROOT / "results" / model / dataset / "metrics" / "metrics.json",
-        REPO_ROOT / "results2" / "final" / model / dataset / "metrics" / "metrics.json",
-        Path("results/final") / model / dataset / "metrics" / "metrics.json",
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return candidates[0]
-
-
-def read_accuracy_summary_rows(section_title: str, dataset_key: str, bucket_map):
-    path = Path("accuracy_summary_mistral.md")
-    lines = path.read_text(encoding="utf-8").splitlines()
-    header_prefix = f"## {section_title}"
-    start = next(
-        idx for idx, line in enumerate(lines) if line.strip().startswith(header_prefix)
-    )
-    end = next(
-        (idx for idx in range(start + 1, len(lines)) if lines[idx].startswith("## ")),
-        len(lines),
-    )
-    section = lines[start:end]
-    rows = []
-    in_lang_table = False
-    for line in section:
-        if line.startswith("| Language |"):
-            in_lang_table = True
-            continue
-        if not in_lang_table:
-            continue
-        if not line.startswith("|"):
-            in_lang_table = False
-            continue
-        if line.startswith("|----------") or line.startswith("| **Avg**"):
-            continue
-        parts = [p.strip() for p in line.strip().strip("|").split("|")]
-        if len(parts) < 4:
-            continue
-        name = parts[0]
-        if name not in bucket_map:
-            continue
-        standard = float(parts[1].replace("%", "").replace("*", ""))
-        context = float(parts[3].replace("%", "").replace("*", ""))
-        rows.append(
-            {
-                "dataset": dataset_key,
-                "language": name,
-                "resource_bucket": bucket_map[name],
-                "cxt_minus_standard": context - standard,
-            }
-        )
-    return rows
+    return REPO_ROOT / "results" / model / dataset / "metrics" / "metrics.json"
 
 
 def read_accuracy_metrics_rows(model: str, dataset: str, bucket_map):
@@ -282,57 +230,15 @@ def read_oe_actual_rows(model: str, dataset: str):
     return rows
 
 
-def read_rows(path: Path):
-    rows = []
-    with path.open(newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            try:
-                rows.append(
-                    {
-                        "dataset": row["dataset"],
-                        "language": row["language"],
-                        "resource_bucket": row["resource_bucket"],
-                        "cxt_minus_standard": float(row["cxt_minus_standard"]),
-                    }
-                )
-            except (TypeError, ValueError):
-                continue
-    return rows
-
-
-def global_piqa_metrics_path(model: str) -> Path:
-    candidates = [
-        REPO_ROOT / "results" / model / "global_piqa" / "metrics" / "metrics.json",
-        REPO_ROOT / "results2" / "final" / model / "global_piqa" / "metrics" / "metrics.json",
-        Path("results/final") / model / "global_piqa" / "metrics" / "metrics.json",
-        Path("results/final3") / model / "global_piqa" / "metrics" / "metrics.json",
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return candidates[0]
-
-
-def read_global_piqa_actual_rows(base: Path, model: str):
-    paired_model = "llama" if model == "mistral" else model
-    paired_path = base / paired_model / "context_advantage" / "tables" / "context_advantage_paired.csv"
-    metrics_path = global_piqa_metrics_path(model)
-    resource_by_lang = {}
-    with paired_path.open(newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            if row["dataset"] != "global_piqa":
-                continue
-            if row["metric_name"] != "chrf":
-                continue
-            resource_by_lang[row["language"]] = row["resource_bucket"]
-
-    metrics = json.load(metrics_path.open(encoding="utf-8"))
+def read_global_piqa_actual_rows(model: str):
+    metrics = json.load(metrics_path(model, "global_piqa").open(encoding="utf-8"))
     std = metrics["slices"]["baseline/standard"]["by_language"]
     ctx = metrics["slices"]["baseline/context"]["by_language"]
     rows = []
-    for lang, bucket in sorted(resource_by_lang.items()):
+    for lang in sorted(PIQA_NAMES.keys()):
         if lang not in std or lang not in ctx:
             continue
+        bucket = resource_bucket_from_score(resource_score_for_code(lang))
         rows.append(
             {
                 "dataset": "global_piqa",
@@ -613,35 +519,22 @@ def parse_args():
 
 def main():
     args = parse_args()
-    base = Path("src/evaluation/regression/final/combined")
     output_dir = args.output_dir
     selected = set(args.plots)
 
-    if "llama" in selected:
-        rows = read_rows(base / "llama" / "context_advantage" / "tables" / "context_advantage_paired.csv")
-        output = output_dir / "llama_context_minus_standard_by_resource_violin.pdf"
-        save_model_plot(rows, "Llama", output)
-        print(output)
-
-    if "qwen" in selected:
-        rows = read_rows(base / "qwen" / "context_advantage" / "tables" / "context_advantage_paired.csv")
-        output = output_dir / "qwen_context_minus_standard_by_resource_violin.pdf"
-        save_model_plot(rows, "Qwen", output)
-        print(output)
-
     if {"llama_global_piqa", "llama_qwen_global_piqa", "llama_mistral_global_piqa"} & selected:
-        llama_gpqa_rows = read_global_piqa_actual_rows(base, "llama")
+        llama_gpqa_rows = read_global_piqa_actual_rows("llama")
         if "llama_global_piqa" in selected:
             out = output_dir / "llama_global_piqa_context_minus_standard_by_resource_violin.pdf"
             save_single_dataset_plot(llama_gpqa_rows, "global_piqa", "Global-PIQA-OE", out)
             print(out)
         if "llama_qwen_global_piqa" in selected:
-            qwen_gpqa_rows = read_global_piqa_actual_rows(base, "qwen")
+            qwen_gpqa_rows = read_global_piqa_actual_rows("qwen")
             out = output_dir / "llama_qwen_global_piqa_context_minus_standard_by_resource_violin.pdf"
             save_two_model_dataset_plot(llama_gpqa_rows, qwen_gpqa_rows, "global_piqa", "Global-PIQA-OE", out)
             print(out)
         if "llama_mistral_global_piqa" in selected:
-            mistral_gpqa_rows = read_global_piqa_actual_rows(base, "mistral")
+            mistral_gpqa_rows = read_global_piqa_actual_rows("mistral")
             out = output_dir / "llama_mistral_global_piqa_context_minus_standard_by_resource_violin.pdf"
             save_two_model_dataset_plot(
                 llama_gpqa_rows,
@@ -691,15 +584,9 @@ def main():
 
     if {"llama_mistral_mmlu", "llama_mistral_belebele", "llama_mistral_mmlu_belebele"} & selected:
         llama_mmlu_rows = read_accuracy_metrics_rows("llama", "mmlu", GLOBAL_MMLU_BUCKETS)
-        if metrics_path("mistral", "mmlu").exists():
-            mistral_mmlu_rows = read_accuracy_metrics_rows("mistral", "mmlu", GLOBAL_MMLU_BUCKETS)
-        else:
-            mistral_mmlu_rows = read_accuracy_summary_rows("Global MMLU", "mmlu", GLOBAL_MMLU_BUCKETS)
+        mistral_mmlu_rows = read_accuracy_metrics_rows("mistral", "mmlu", GLOBAL_MMLU_BUCKETS)
         llama_belebele_rows = read_accuracy_metrics_rows("llama", "belebele", BELEBELE_BUCKETS)
-        if metrics_path("mistral", "belebele").exists():
-            mistral_belebele_rows = read_accuracy_metrics_rows("mistral", "belebele", BELEBELE_BUCKETS)
-        else:
-            mistral_belebele_rows = read_accuracy_summary_rows("Belebele", "belebele", BELEBELE_BUCKETS)
+        mistral_belebele_rows = read_accuracy_metrics_rows("mistral", "belebele", BELEBELE_BUCKETS)
 
         if "llama_mistral_mmlu" in selected:
             out = output_dir / "llama_mistral_mmlu_context_minus_standard_by_resource_violin.pdf"

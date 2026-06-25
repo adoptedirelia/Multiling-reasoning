@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List
 
 
-REPO_ROOT = Path("/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning")
+REPO_ROOT = Path(__file__).resolve().parents[3]
 ANALYSIS_ROOT = REPO_ROOT / "results" / "translation_quality_analysis"
 WITH_HUMAN_ROOT = ANALYSIS_ROOT / "with_human_judge"
 OUT_DIR = ANALYSIS_ROOT / "tables"
@@ -99,7 +99,7 @@ def build_payload(rows: List[Dict]) -> Dict:
     }
 
     return {
-        "annotation_source": str(FULL_105_PATH),
+        "annotation_source": "results/translation_quality_analysis/tables/full_105_human_llm_annotations.json",
         "n_items": len(rows),
         "label_space": LABELS,
         "pairwise": pairwise,

@@ -6,13 +6,9 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 
-REPO_ROOT = Path("/gscratch/stf/arnav/mt-llm-mt/Multiling-reasoning")
+REPO_ROOT = Path(__file__).resolve().parents[3]
 RESULTS_ROOT = REPO_ROOT / "results"
 OUTPUT_DIR = RESULTS_ROOT / "ablation" / "tables"
-REPORT_FILES = {
-    "llama": REPO_ROOT / "ablation_report_llama.md",
-    "mistral": REPO_ROOT / "ablation_report_mistral.md",
-}
 
 OPEN_ENDED_DATASETS = [
     ("aya", "Aya", "Open-ended generation (chrF)"),
@@ -21,13 +17,13 @@ OPEN_ENDED_DATASETS = [
     ("mkqa", "MKQA", "Open-ended generation (chrF)"),
 ]
 
-REPORT_DATASETS = [
-    ("Global MMLU", "Multiple-choice (Acc.)"),
-    ("Belebele", "Multiple-choice (Acc.)"),
-    ("Global-PIQA", "Multiple-choice (Acc.)"),
-    ("MCSQA", "Multiple-choice (Acc.)"),
-    ("MGSM", "Math (Acc.)"),
-    ("MMath", "Math (Acc.)"),
+ACCURACY_DATASETS = [
+    ("mmlu", "Global MMLU", "Multiple-choice (Acc.)"),
+    ("belebele", "Belebele", "Multiple-choice (Acc.)"),
+    ("global-piqa-mc", "Global-PIQA", "Multiple-choice (Acc.)"),
+    ("mcsqa", "MCSQA", "Multiple-choice (Acc.)"),
+    ("mgsm", "MGSM", "Math (Acc.)"),
+    ("mmath", "MMath", "Math (Acc.)"),
 ]
 
 TASK_GROUP_ORDER = [
@@ -83,6 +79,15 @@ def load_oe_metric(path: Path, slice_name: str) -> float:
     return round_half_up(mean(values))
 
 
+def load_metric(path: Path, slice_name: str) -> float:
+    blob = json.loads(path.read_text(encoding="utf-8"))
+    slice_blob = blob["slices"][slice_name]
+    by_language = slice_blob["by_language"]
+    metric_name = infer_metric_name(by_language)
+    values = [float(stats[metric_name]) for stats in by_language.values()]
+    return round_half_up(mean(values))
+
+
 def load_oe_rows(model: str) -> List[Dict[str, object]]:
     rows = []
     for dataset_key, dataset_label, task_group in OPEN_ENDED_DATASETS:
@@ -126,49 +131,54 @@ def load_oe_rows(model: str) -> List[Dict[str, object]]:
     return rows
 
 
-def parse_report_overall(model: str) -> Dict[str, Dict[str, float]]:
-    lines = REPORT_FILES[model].read_text(encoding="utf-8").splitlines()
-    in_overall = False
-    overall = {}
-    for line in lines:
-        stripped = line.strip()
-        if stripped == "## Overall Accuracy":
-            in_overall = True
-            continue
-        if in_overall and stripped.startswith("## "):
-            break
-        if not in_overall:
-            continue
-        if stripped.startswith("|") and "Dataset" not in stripped and "---" not in stripped:
-            parts = [p.strip().replace("**", "") for p in stripped.strip("|").split("|")]
-            if len(parts) != 6:
-                continue
-            overall[parts[0]] = {
-                "standard": float(parts[1].rstrip("%")),
-                "context": float(parts[2].rstrip("%")),
-                "answer_plus_source_question": float(parts[3].rstrip("%")),
-                "answer_plus_english_question": float(parts[4].rstrip("%")),
-                "answer_plus_reasoning": float(parts[5].rstrip("%")),
-            }
-    return overall
-
-
-def load_report_rows(model: str) -> List[Dict[str, object]]:
-    overall = parse_report_overall(model)
+def load_accuracy_rows(model: str) -> List[Dict[str, object]]:
     rows = []
-    for dataset_label, task_group in REPORT_DATASETS:
+    for dataset_key, dataset_label, task_group in ACCURACY_DATASETS:
+        base_metrics = RESULTS_ROOT / model / dataset_key / "metrics" / "metrics.json"
+        values = {
+            "standard": load_metric(base_metrics, "baseline/standard"),
+            "context": load_metric(base_metrics, "baseline/context"),
+            "answer_plus_source_question": load_metric(
+                RESULTS_ROOT
+                / model
+                / f"{dataset_key}-ablation"
+                / "answer_plus_source_question"
+                / "metrics"
+                / "metrics.json",
+                "baseline/answer_plus_source_question",
+            ),
+            "answer_plus_english_question": load_metric(
+                RESULTS_ROOT
+                / model
+                / f"{dataset_key}-ablation"
+                / "answer_plus_english_question"
+                / "metrics"
+                / "metrics.json",
+                "baseline/answer_plus_english_question",
+            ),
+            "answer_plus_reasoning": load_metric(
+                RESULTS_ROOT
+                / model
+                / f"{dataset_key}-ablation"
+                / "answer_plus_reasoning"
+                / "metrics"
+                / "metrics.json",
+                "baseline/answer_plus_reasoning",
+            ),
+        }
+
         rows.append(
             {
                 "dataset": dataset_label,
                 "task_group": task_group,
-                "values": overall[dataset_label],
+                "values": values,
             }
         )
     return rows
 
 
 def build_model_rows(model: str) -> List[Dict[str, object]]:
-    return load_oe_rows(model) + load_report_rows(model)
+    return load_oe_rows(model) + load_accuracy_rows(model)
 
 
 def fmt_num(value: float) -> str:
