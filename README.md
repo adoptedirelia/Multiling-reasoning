@@ -1,6 +1,6 @@
 # Multilingual Reasoning Cascades Need More Context
 
-This repository contains the code and paper-facing artifacts for **Multilingual Reasoning Cascades Need More Context**.
+This repository contains the code and paper-facing artifacts for **Multilingual Reasoning Cascades Need More Context** ([paper](https://arxiv.org/abs/2606.27306)).
 
 Translation cascades for reasoning translate a query into English, reason in English, and translate the answer back to the original language, but this pipeline is structurally lossy because intermediate stages discard information later modules may still need. We study a simple, training-free **context-aware** cascade that preserves additional upstream context for the final translation module, and find especially strong gains on open-ended multilingual reasoning, with the original-language question carrying most of the useful context.
 
@@ -232,3 +232,18 @@ Outputs are written under:
 - `results/translation_quality_analysis/full_llm_judgements/`
 - `results/translation_quality_analysis/with_human_judge/`
 - `results/translation_quality_analysis/tables/`
+
+## Citation
+
+If you use this work in your research, please cite our paper:
+
+```bibtex
+@misc{mazumder2026multilingual,
+  title={Multilingual Reasoning Cascades Need More Context},
+  author={Mazumder, Arnav and Zhang, Dengjia and Li, Shuyue Stella and Tsvetkov, Yulia and Bafna, Niyati},
+  year={2026},
+  eprint={2606.27306},
+  archivePrefix={arXiv},
+  primaryClass={cs.CL},
+  url={https://arxiv.org/abs/2606.27306}
+}
