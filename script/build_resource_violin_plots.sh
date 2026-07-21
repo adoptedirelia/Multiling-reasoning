@@ -8,4 +8,4 @@ OUT_DIR="${REPO_ROOT}/results/resource_violin_plots"
 mkdir -p "${OUT_DIR}"
 "${PYTHON_BIN}" -m src.evaluation.plots.resource_violin_plots \
   --output-dir "${OUT_DIR}" \
-  --plots llama_mistral_global_piqa llama_mistral_mmlu_belebele
+  --plots llama_mistral_global_piqa_mmlu_belebele

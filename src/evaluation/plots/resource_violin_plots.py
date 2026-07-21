@@ -444,8 +444,11 @@ def save_four_dataset_two_model_plot(dataset_rows, output: Path):
     plt.close(fig)
 
 
-def save_two_dataset_two_model_plot(dataset_rows, output: Path):
-    fig, axes = plt.subplots(2, 2, figsize=(5.2, 4.8), sharex=False, sharey=False)
+def save_multi_dataset_two_model_plot(dataset_rows, output: Path):
+    n_rows = len(dataset_rows)
+    fig, axes = plt.subplots(n_rows, 2, figsize=(5.2, 2.4 * n_rows), sharex=False, sharey=False)
+    if n_rows == 1:
+        axes = np.array([axes])
     row_titles = []
     for row_idx, (dataset, dataset_label, left_rows, right_rows) in enumerate(dataset_rows):
         combined = [r["cxt_minus_standard"] for r in left_rows if r["dataset"] == dataset]
@@ -476,7 +479,7 @@ def save_two_dataset_two_model_plot(dataset_rows, output: Path):
         left_pos = left_ax.get_position()
         right_pos = right_ax.get_position()
         x = (left_pos.x0 + right_pos.x1) / 2.0
-        y = max(left_pos.y1, right_pos.y1) + (0.05 if row_idx == 0 else 0.055)
+        y = max(left_pos.y1, right_pos.y1) + 0.045
         fig.text(x, y, dataset_label, ha="center", va="bottom", fontsize=10)
     fig.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -507,10 +510,10 @@ def parse_args():
             "llama_mistral_mmlu",
             "llama_mistral_belebele",
             "llama_mistral_mmlu_belebele",
+            "llama_mistral_global_piqa_mmlu_belebele",
         ],
         default=[
-            "llama_mistral_global_piqa",
-            "llama_mistral_mmlu_belebele",
+            "llama_mistral_global_piqa_mmlu_belebele",
         ],
         help="Subset of violin plots to generate.",
     )
@@ -582,7 +585,12 @@ def main():
         )
         print(out)
 
-    if {"llama_mistral_mmlu", "llama_mistral_belebele", "llama_mistral_mmlu_belebele"} & selected:
+    if {
+        "llama_mistral_mmlu",
+        "llama_mistral_belebele",
+        "llama_mistral_mmlu_belebele",
+        "llama_mistral_global_piqa_mmlu_belebele",
+    } & selected:
         llama_mmlu_rows = read_accuracy_metrics_rows("llama", "mmlu", GLOBAL_MMLU_BUCKETS)
         mistral_mmlu_rows = read_accuracy_metrics_rows("mistral", "mmlu", GLOBAL_MMLU_BUCKETS)
         llama_belebele_rows = read_accuracy_metrics_rows("llama", "belebele", BELEBELE_BUCKETS)
@@ -616,8 +624,20 @@ def main():
 
         if "llama_mistral_mmlu_belebele" in selected:
             out = output_dir / "llama_mistral_mmlu_belebele_context_minus_standard_by_resource_violin.pdf"
-            save_two_dataset_two_model_plot(
+            save_multi_dataset_two_model_plot(
                 [
+                    ("mmlu", "Global MMLU", llama_mmlu_rows, mistral_mmlu_rows),
+                    ("belebele", "Belebele", llama_belebele_rows, mistral_belebele_rows),
+                ],
+                out,
+            )
+            print(out)
+
+        if "llama_mistral_global_piqa_mmlu_belebele" in selected:
+            out = output_dir / "llama_mistral_global_piqa_mmlu_belebele_context_minus_standard_by_resource_violin.pdf"
+            save_multi_dataset_two_model_plot(
+                [
+                    ("global_piqa", "Global-PIQA-OE", read_global_piqa_actual_rows("llama"), read_global_piqa_actual_rows("mistral")),
                     ("mmlu", "Global MMLU", llama_mmlu_rows, mistral_mmlu_rows),
                     ("belebele", "Belebele", llama_belebele_rows, mistral_belebele_rows),
                 ],

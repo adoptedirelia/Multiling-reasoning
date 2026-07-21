@@ -192,6 +192,8 @@ script/build_significance_tables.sh
 script/build_resource_violin_plots.sh
 ```
 
+This generates a single 3x2 violin plot covering `Global-PIQA-OE`, `Global MMLU`, and `Belebele`, with one row per dataset and one column per model (`llama`, `mistral`).
+
 These scripts write into:
 
 - `results/open_ended_macro_table/`
